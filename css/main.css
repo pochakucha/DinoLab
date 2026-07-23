@@ -52,3 +52,100 @@ body{background:radial-gradient(circle at 20% 0,#12304a 0,#0b1220 34%,#070b13 10
 @media(max-width:1100px){.encyclopedia-grid{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:760px){.module-heading{display:block}.filter-row{margin-top:12px}.encyclopedia-grid{grid-template-columns:repeat(2,1fr)}.feature-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:430px){.encyclopedia-grid,.feature-grid{grid-template-columns:1fr}}
+
+/* DinoLab v0.2 — rune card readability fix */
+#runeRows{
+  grid-template-columns:repeat(3,minmax(180px,1fr));
+  gap:12px;
+}
+.rune-row{
+  grid-template-columns:78px minmax(0,1fr);
+  grid-template-rows:auto 34px 38px;
+  gap:7px 12px;
+  min-height:142px;
+  padding:14px;
+  overflow:visible;
+  transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;
+}
+.rune-row:hover{
+  transform:translateY(-2px);
+  border-color:#4b6b88;
+  box-shadow:0 10px 24px #0005;
+}
+.rune-row .rune-icon{
+  grid-row:1/4;
+  width:78px;
+  height:78px;
+  border-radius:16px;
+}
+.rune-row .rune-name{
+  min-width:0;
+  padding-right:42px;
+  font-size:14px;
+  line-height:1.25;
+}
+.rune-row .grade{
+  right:10px;
+  top:10px;
+}
+.rune-toggles{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+  min-width:0;
+}
+.rune-toggles label{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  padding:6px 7px;
+  border:1px solid #334155;
+  border-radius:8px;
+  background:#0b1220;
+  color:#cbd5e1;
+  font-size:12px;
+  line-height:1;
+  white-space:nowrap;
+  cursor:pointer;
+}
+.rune-toggles input{
+  width:15px;
+  height:15px;
+  margin:0;
+  flex:0 0 auto;
+}
+.rune-level{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  align-items:center;
+  gap:7px;
+  color:#cbd5e1;
+  font-size:12px;
+  white-space:nowrap;
+}
+.rune-row .level{
+  width:100%!important;
+  min-width:0;
+  height:34px;
+  padding:5px 8px!important;
+  font-size:16px;
+  text-align:center;
+}
+.rune-row.equipped{
+  outline:none;
+  border-color:#38bdf8;
+  box-shadow:0 0 0 2px #38bdf844,0 12px 28px #0005;
+}
+@media(max-width:1250px){
+  #runeRows{grid-template-columns:repeat(3,minmax(170px,1fr))}
+}
+@media(max-width:900px){
+  #runeRows{grid-template-columns:repeat(2,minmax(170px,1fr))}
+}
+@media(max-width:520px){
+  #runeRows{grid-template-columns:1fr}
+  .rune-row{grid-template-columns:72px minmax(0,1fr);min-height:132px}
+  .rune-row .rune-icon{width:72px;height:72px}
+}

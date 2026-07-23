@@ -55,8 +55,11 @@ function init(){
    row.innerHTML=`<img class="rune-icon" src="${RUNE_ICONS[name]||''}" alt="${name}" onerror="this.style.visibility='hidden'">
    <span class="rune-name">${name}</span>
    <span class="grade grade-${d.grade}">${d.grade}</span>
-   <span class="rune-controls"><label><input class="owned" type="checkbox" aria-label="${name} 보유"> 보유</label><label><input class="equip" type="checkbox" aria-label="${name} 장착"> 장착</label></span>
-   <span class="rune-controls">Lv. <input class="level" type="number" min="0" max="${d.maxLevel}" value="0"></span>`;
+   <div class="rune-toggles">
+     <label><input class="owned" type="checkbox" aria-label="${name} 보유"><span>보유</span></label>
+     <label><input class="equip" type="checkbox" aria-label="${name} 장착"><span>장착</span></label>
+   </div>
+   <label class="rune-level"><span>Lv.</span><input class="level" type="number" min="0" max="${d.maxLevel}" value="0"></label>`;
    const owned=row.querySelector(".owned"), level=row.querySelector(".level");
    level.addEventListener("input",()=>{owned.checked=Number(level.value)>0});
    owned.addEventListener("change",()=>{if(owned.checked&&Number(level.value)<=0)level.value=d.maxLevel});

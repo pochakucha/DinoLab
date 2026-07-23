@@ -1,3 +1,5 @@
+DinoLab v0.2
+
 DinoLab v0.1
 
 GitHub 저장소:
@@ -24,3 +26,6 @@ Branch: main / (root) → Save
 
 예상 사이트 주소
 https://pochakucha.github.io/DinoLab/
+
+
+이번 버전: 보유/장착 줄바꿈 수정, 룬 카드 확대, 레벨 입력 정렬 개선.
