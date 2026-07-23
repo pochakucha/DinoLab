@@ -247,3 +247,180 @@ body{background:radial-gradient(circle at 20% 0,#12304a 0,#0b1220 34%,#070b13 10
   .rune-row{grid-template-columns:96px minmax(0,1fr);min-height:154px}
   .rune-row .rune-icon{width:96px;height:96px}
 }
+
+
+/* DinoLab v0.4 — text-only rune interface */
+.brand-mark{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(145deg,#0ea5e9,#1d4ed8);color:white;font-size:22px;font-weight:950;box-shadow:0 8px 22px #0006}
+#runeRows{display:block}
+.rune-group{margin:14px 0 6px}
+.rune-row{display:grid;grid-template-columns:minmax(170px,1fr) 150px 112px;grid-template-rows:auto;align-items:center;gap:12px;min-height:64px;padding:10px 12px;overflow:visible}
+.rune-row .rune-title{display:flex;align-items:center;gap:9px;min-width:0}
+.rune-row .rune-name{font-size:15px;font-weight:900;white-space:normal;overflow:visible;text-overflow:clip;word-break:keep-all}
+.rune-row .grade{position:static;flex:0 0 auto;font-size:10px;border:1px solid currentColor;border-radius:999px;padding:2px 6px;opacity:.9}
+.rune-row .rune-toggles{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.rune-row .rune-toggles label{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;padding:8px 6px;border:1px solid #334155;border-radius:8px;background:#0b1220;white-space:nowrap;font-size:12px;cursor:pointer}
+.rune-row .rune-toggles input{margin:0;width:16px;height:16px;flex:0 0 auto}
+.rune-row .rune-level{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:7px;color:#cbd5e1;font-size:12px;white-space:nowrap}
+.rune-row .level{width:100%!important;min-width:0;padding:7px!important;text-align:center}
+.rune-row.equipped{outline:2px solid #38bdf8;background:linear-gradient(145deg,#0c4a6e,#111827)}
+.result-runes{display:grid;grid-template-columns:repeat(5,minmax(90px,1fr));gap:8px;margin:8px 0 14px}
+.result-rune{min-height:58px;display:flex;flex-direction:column;justify-content:center;border:1px solid #334155;border-radius:10px;background:#0b1220;padding:8px;text-align:center}
+.result-rune-name{font-size:12px;font-weight:900;line-height:1.25;word-break:keep-all}
+.result-rune b{font-size:11px;color:#7dd3fc;margin-top:4px}
+.encyclopedia-grid{grid-template-columns:repeat(6,minmax(150px,1fr))}
+.ency-card{min-height:150px;padding-top:36px}
+.ency-card h3{font-size:16px;word-break:keep-all}
+@media(max-width:900px){
+ .rune-row{grid-template-columns:minmax(150px,1fr) 140px 105px}
+ .encyclopedia-grid{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:620px){
+ .rune-row{grid-template-columns:1fr 108px;grid-template-areas:"title level" "toggles toggles";gap:8px}
+ .rune-row .rune-title{grid-area:title}
+ .rune-row .rune-level{grid-area:level}
+ .rune-row .rune-toggles{grid-area:toggles}
+ .result-runes{grid-template-columns:repeat(2,1fr)}
+ .encyclopedia-grid{grid-template-columns:repeat(2,1fr)}
+}
+
+/* DinoLab v0.5 — compact rune inventory */
+#runeRows{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(320px,1fr));
+  gap:7px 10px;
+}
+.rune-group{
+  grid-column:1/-1;
+  margin:10px 0 2px;
+  padding:7px 10px;
+  font-size:14px;
+  border-radius:8px;
+}
+.rune-row{
+  display:grid;
+  grid-template-columns:minmax(120px,1fr) 118px 82px;
+  align-items:center;
+  gap:7px;
+  min-height:46px;
+  padding:6px 8px;
+  border-radius:9px;
+}
+.rune-row .rune-title{gap:6px}
+.rune-row .rune-name{
+  font-size:13px;
+  line-height:1.15;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.rune-row .grade{
+  font-size:9px;
+  padding:1px 5px;
+}
+.rune-row .rune-toggles{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:4px;
+}
+.rune-row .rune-toggles label{
+  min-height:30px;
+  padding:4px;
+  gap:4px;
+  font-size:11px;
+  border-radius:6px;
+}
+.rune-row .rune-toggles input{
+  width:14px;
+  height:14px;
+}
+.rune-row .rune-level{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:4px;
+  font-size:11px;
+}
+.rune-row .level{
+  height:30px!important;
+  padding:3px 5px!important;
+  font-size:14px!important;
+  border-radius:6px!important;
+}
+@media(max-width:1050px){
+  #runeRows{grid-template-columns:1fr}
+  .rune-group{grid-column:1}
+}
+@media(max-width:520px){
+  .rune-row{
+    grid-template-columns:minmax(105px,1fr) 108px 72px;
+    gap:5px;
+    padding:5px 6px;
+  }
+  .rune-row .grade{display:none}
+  .rune-row .rune-name{font-size:12px}
+}
+/* v0.6 ultra compact text-only rune editor */
+.compact-runes{padding:4px 0}
+#runeRows{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+.rune-group{grid-column:1/-1;margin:8px 0 2px;padding:5px 8px;font-size:13px;border-radius:7px}
+.rune-row{min-height:38px!important;padding:5px 8px!important;border-radius:8px!important;display:grid!important;grid-template-columns:28px minmax(118px,1fr) auto!important;align-items:center!important;gap:8px!important}
+.rune-row .rune-title{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;min-width:0}
+.rune-row .rune-name{font-size:14px!important;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis}
+.rune-row .grade{display:none!important}
+.rune-row .rune-toggles{display:contents!important}
+.rune-row .rune-toggles label{display:flex!important;align-items:center!important;justify-content:center!important;padding:0!important;border:0!important;background:none!important}
+.rune-row .rune-toggles label span{display:none!important}
+.rune-row .owned{width:18px;height:18px}
+.rune-row .equip{display:none!important}
+.rune-row .rune-level{display:flex!important;align-items:center!important;gap:4px!important;margin:0!important}
+.rune-row .rune-level span{font-size:12px;color:var(--muted)}
+.rune-row .rune-level input{width:58px!important;height:30px!important;padding:3px 6px!important;text-align:center}
+.manual-combo{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
+.manual-combo select{width:100%;min-width:0;padding:9px 6px;border-radius:8px;background:#0b1526;color:#fff;border:1px solid #33435d}
+@media(max-width:760px){#runeRows{grid-template-columns:1fr}.manual-combo{grid-template-columns:1fr 1fr}.rune-row{grid-template-columns:28px 1fr auto!important}}
+/* v0.7 profile controls */
+.profile-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:7px}.btn.danger{border-color:#7f1d1d;background:#3f1117;color:#fecaca}#profileHint{margin-top:8px}
+@media(max-width:520px){.profile-row{grid-template-columns:1fr 1fr}.profile-row select{grid-column:1/-1}}
+
+/* v0.10 mobile-first usability */
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+button,input,select{touch-action:manipulation}
+@media(max-width:760px){
+  body{overflow-x:hidden}
+  .header-inner{padding:10px 12px;display:block}
+  .brand{margin-bottom:8px}
+  .nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;width:100%}
+  .nav button,.nav a{min-height:42px;padding:9px 8px;text-align:center;font-size:13px}
+  .hero-banner{padding:14px 10px}
+  .hero-box{padding:18px 14px;border-radius:14px}
+  .hero-box h1{font-size:25px;line-height:1.25}
+  .hero-box p{font-size:14px}
+  .feature-chips{gap:5px}.feature-chips span{font-size:12px;padding:5px 7px}
+  .hero-action button{width:100%;min-height:46px}
+  .app{padding:12px 10px}
+  .title h1{font-size:22px}.title small{display:block;margin-top:4px}
+  .panel{padding:14px 12px;border-radius:12px}
+  .form-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .field label{font-size:12px}
+  .field input,.field select,.profile-row select,.manual-combo select{font-size:16px;min-height:44px}
+  .actions{display:grid;grid-template-columns:1fr;gap:8px}
+  .actions .btn,.copy-row .btn,.profile-row .btn{width:100%;min-height:46px;font-size:15px}
+  .profile-row{grid-template-columns:1fr 1fr}.profile-row select{grid-column:1/-1}
+  #runeRows{grid-template-columns:1fr;gap:5px}
+  .rune-group{position:sticky;top:0;z-index:3;background:var(--panel,#101b2d);padding:7px 8px}
+  .rune-row{min-height:46px!important;padding:7px 8px!important;grid-template-columns:30px minmax(0,1fr) auto!important}
+  .rune-row .owned{width:22px;height:22px}
+  .rune-row .rune-name{font-size:15px!important}
+  .rune-row .rune-level input{width:66px!important;height:38px!important;font-size:16px!important}
+  .manual-combo{grid-template-columns:1fr;gap:7px}
+  .result-panel{scroll-margin-top:10px}
+  .cards{grid-template-columns:1fr 1fr!important;gap:8px}
+  .card{padding:10px}.card b{font-size:20px}
+  .result{font-size:14px;overflow-wrap:anywhere;white-space:pre-wrap}
+  .module-section{padding:24px 12px}.encyclopedia-grid,.feature-grid{grid-template-columns:1fr!important}
+  .footer{padding:20px 12px;font-size:12px}
+}
+@media(max-width:390px){
+  .form-grid{grid-template-columns:1fr}
+  .cards{grid-template-columns:1fr!important}
+  .hero-box h1{font-size:22px}
+}
