@@ -1,31 +1,15 @@
-DinoLab v0.2
+DinoLab v0.3 업로드 방법
 
-DinoLab v0.1
+1. 이 ZIP 파일을 압축 해제합니다.
+2. 아래 GitHub 업로드 페이지를 엽니다.
+   https://github.com/pochakucha/DinoLab/upload/main
+3. DinoLab_v0.3 폴더 안의 파일과 폴더를 전부 드래그합니다.
+4. Commit changes를 누릅니다.
+5. 1~3분 후 https://pochakucha.github.io/DinoLab/ 에서 Ctrl+F5로 새로고침합니다.
 
-GitHub 저장소:
-https://github.com/pochakucha/DinoLab
-
-업로드 방법
-1. 이 ZIP의 압축을 풉니다.
-2. 압축을 푼 폴더 안의 모든 파일과 폴더를 선택합니다.
-3. GitHub 저장소에서 Add file → Upload files를 누릅니다.
-4. 모든 항목을 드래그합니다.
-5. 아래 Commit changes 버튼을 누릅니다.
-
-반드시 업로드할 항목
-- index.html
-- css 폴더
-- js 폴더
-- data 폴더
-- assets 폴더
-- tistory_embed.html
-
-GitHub Pages 설정
-Settings → Pages → Build and deployment → Deploy from a branch
-Branch: main / (root) → Save
-
-예상 사이트 주소
-https://pochakucha.github.io/DinoLab/
-
-
-이번 버전: 보유/장착 줄바꿈 수정, 룬 카드 확대, 레벨 입력 정렬 개선.
+v0.3 주요 수정
+- 룬 아이콘 19개 원본 재추출
+- 이름 말줄임표 제거
+- 보유/장착 겹침 해결
+- 카드 2열 대형 배치
+- 모바일 1열 배치

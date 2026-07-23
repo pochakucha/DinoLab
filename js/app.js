@@ -21,6 +21,7 @@ const FIELD_DEFS = [
 const $=s=>document.querySelector(s);
 let worker=null;
 
+function displayGrade(raw){return ({"에픽/노랑":"에픽","초록":"레어","파랑":"일반"}[raw]||raw)}
 function init(){
  const form=$("#statsForm");
  FIELD_DEFS.forEach(([k,label,type,val])=>{
@@ -40,21 +41,21 @@ function init(){
  let lastGrade="";
  Object.entries(RUNE_DATA)
  .sort((a,b)=>{
-   const ga=GRADE_ORDER.indexOf(a[1].grade), gb=GRADE_ORDER.indexOf(b[1].grade);
+   const ga=GRADE_ORDER.indexOf(displayGrade(a[1].grade)), gb=GRADE_ORDER.indexOf(displayGrade(b[1].grade));
    if(ga!==gb)return (ga<0?999:ga)-(gb<0?999:gb);
    const ia=RUNE_ORDER.indexOf(a[0]), ib=RUNE_ORDER.indexOf(b[0]);
    return (ia<0?999:ia)-(ib<0?999:ib)||a[0].localeCompare(b[0],"ko");
  })
  .forEach(([name,d])=>{
-   if(d.grade!==lastGrade){
-     const h=document.createElement("div");h.className="rune-group "+d.grade;
-     const icon={"전설":"🔴","유니크":"🟠","에픽":"🟡","레어":"🟢","일반":"🔵"}[d.grade]||"";
-     h.textContent=icon+" "+d.grade;box.append(h);lastGrade=d.grade;
+   const grade=displayGrade(d.grade);
+   if(grade!==lastGrade){
+     const h=document.createElement("div");h.className="rune-group "+grade;
+     const icon={"전설":"🔴","유니크":"🟠","에픽":"🟡","레어":"🟢","일반":"🔵"}[grade]||"";
+     h.textContent=icon+" "+grade;box.append(h);lastGrade=grade;
    }
-   const row=document.createElement("div");row.className="rune-row grade-"+d.grade;row.dataset.name=name;
+   const row=document.createElement("div");row.className="rune-row grade-"+grade;row.dataset.name=name;
    row.innerHTML=`<img class="rune-icon" src="${RUNE_ICONS[name]||''}" alt="${name}" onerror="this.style.visibility='hidden'">
-   <span class="rune-name">${name}</span>
-   <span class="grade grade-${d.grade}">${d.grade}</span>
+   <div class="rune-title"><span class="rune-name">${name}</span><span class="grade grade-${grade}">${grade}</span></div>
    <div class="rune-toggles">
      <label><input class="owned" type="checkbox" aria-label="${name} 보유"><span>보유</span></label>
      <label><input class="equip" type="checkbox" aria-label="${name} 장착"><span>장착</span></label>
