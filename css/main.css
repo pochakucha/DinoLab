@@ -1,0 +1,54 @@
+
+:root{--bg:#0f172a;--panel:#111827;--line:#334155;--text:#e5e7eb;--muted:#94a3b8;--accent:#38bdf8;--good:#34d399;--warn:#fbbf24;--bad:#fb7185}
+*{box-sizing:border-box} body{margin:0;background:linear-gradient(135deg,#0b1220,#111827);color:var(--text);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif}
+.app{max-width:1500px;margin:auto;padding:16px}.title{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:14px}.title h1{font-size:24px;margin:0}.title small{color:var(--muted)}
+.grid{display:grid;grid-template-columns:320px 460px 1fr;gap:12px}.panel{background:rgba(17,24,39,.96);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 12px 30px #0004}.panel h2{font-size:16px;margin:0 0 12px}
+.form-grid{display:grid;grid-template-columns:1fr 110px;gap:7px 8px;align-items:center}.form-grid label{font-size:13px;color:#cbd5e1}.form-grid input,.form-grid select{width:100%;padding:7px 8px;background:#0b1220;border:1px solid #475569;border-radius:7px;color:white}
+.actions{display:grid;gap:7px;margin-top:12px}.btn{border:0;border-radius:8px;padding:10px 12px;font-weight:700;cursor:pointer;background:#334155;color:white}.btn.primary{background:#0284c7}.btn.good{background:#047857}.btn.warn{background:#a16207}.btn:disabled{opacity:.45;cursor:not-allowed}
+.runes{max-height:730px;overflow:auto}.rune-head,.rune-row{display:grid;grid-template-columns:50px 50px 1fr 75px 72px;gap:6px;align-items:center}.rune-head{position:sticky;top:0;background:#111827;padding:4px 0 8px;font-size:12px;color:var(--muted);z-index:2}.rune-row{border-top:1px solid #253044;padding:6px 0;font-size:13px}.rune-row input[type=number]{width:100%;padding:5px;background:#0b1220;border:1px solid #475569;border-radius:6px;color:white}.grade{font-size:11px;font-weight:800}
+.grade-전설{color:#fb7185}.grade-유니크{color:#fb923c}.grade-에픽{color:#facc15}.grade-레어{color:#4ade80}.grade-일반{color:#60a5fa}
+.rune-group{margin:10px 0 4px;padding:9px 10px;border-radius:8px;font-weight:900;letter-spacing:.02em;border:1px solid #334155;background:#0b1220}
+.rune-group.전설{color:#fb7185;border-color:#7f1d1d}.rune-group.유니크{color:#fb923c;border-color:#9a3412}.rune-group.에픽{color:#facc15;border-color:#854d0e}.rune-group.레어{color:#4ade80;border-color:#166534}.rune-group.일반{color:#60a5fa;border-color:#1d4ed8}
+.rune-row.grade-전설{border-left:3px solid #fb7185;padding-left:6px}.rune-row.grade-유니크{border-left:3px solid #fb923c;padding-left:6px}.rune-row.grade-에픽{border-left:3px solid #facc15;padding-left:6px}.rune-row.grade-레어{border-left:3px solid #4ade80;padding-left:6px}.rune-row.grade-일반{border-left:3px solid #60a5fa;padding-left:6px}
+.copy-row{display:flex;gap:8px;margin:10px 0}.copy-row .btn{flex:1}
+.status{margin:0 0 10px;padding:10px;border:1px solid #334155;border-radius:8px;color:#cbd5e1;background:#0b1220}.progress{height:8px;background:#1e293b;border-radius:999px;overflow:hidden;margin-top:7px}.progress>div{height:100%;width:0;background:linear-gradient(90deg,#0ea5e9,#34d399);transition:width .15s}
+.result{white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px;line-height:1.55;max-height:760px;overflow:auto;background:#07101e;border:1px solid #334155;border-radius:10px;padding:12px}
+.result .hero{font-family:system-ui,sans-serif}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}.card{background:#0b1220;border:1px solid #334155;border-radius:9px;padding:9px}.card b{display:block;font-size:18px}.goodtxt{color:var(--good)}.warntxt{color:var(--warn)}.badtxt{color:var(--bad)}
+.note{font-size:12px;color:var(--muted);margin-top:10px}.profile-row{display:flex;gap:6px}.profile-row select{flex:1}
+@media(max-width:1100px){.grid{grid-template-columns:1fr 1.25fr}.result-panel{grid-column:1/-1}}@media(max-width:720px){.grid{grid-template-columns:1fr}.result-panel{grid-column:auto}.title{display:block}.runes{max-height:none}.cards{grid-template-columns:1fr}}
+
+/* Web 3.0 Alpha icon-card UI */
+.grid{grid-template-columns:320px minmax(560px,1fr) minmax(380px,.9fr)}
+.runes{max-height:780px}.rune-head{display:none}.rune-group{grid-column:1/-1;margin:14px 0 6px}
+#runeRows{display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));gap:10px}
+.rune-row{display:grid;grid-template-columns:64px 1fr;grid-template-rows:auto auto auto;gap:4px 10px;position:relative;padding:10px;border:1px solid #334155;border-radius:12px;background:linear-gradient(145deg,#0b1220,#111827);min-height:104px;overflow:hidden}
+.rune-row .rune-icon{grid-row:1/4;width:64px;height:64px;object-fit:cover;border-radius:14px;align-self:center;box-shadow:0 4px 12px #0008}
+.rune-row .rune-name{font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rune-row .rune-controls{display:flex;align-items:center;gap:6px;font-size:12px;color:#cbd5e1}
+.rune-row .level{width:72px!important;padding:5px!important}
+.rune-row .equip,.rune-row .owned{accent-color:#38bdf8}
+.rune-row .grade{font-size:10px;position:absolute;right:8px;top:8px}
+.rune-row.equipped{outline:2px solid #38bdf8;background:linear-gradient(145deg,#0c4a6e,#111827)}
+@media(max-width:1250px){.grid{grid-template-columns:300px 1fr}.result-panel{grid-column:1/-1}}
+@media(max-width:760px){.grid{grid-template-columns:1fr}#runeRows{grid-template-columns:repeat(2,minmax(140px,1fr))}.result-panel{grid-column:auto}.rune-row{grid-template-columns:54px 1fr}.rune-row .rune-icon{width:54px;height:54px}}
+@media(max-width:430px){#runeRows{grid-template-columns:1fr}}
+
+
+/* Web 3.1 Beta shell */
+body{background:radial-gradient(circle at 20% 0,#12304a 0,#0b1220 34%,#070b13 100%);min-height:100vh}
+.site-header{position:sticky;top:0;z-index:20;background:rgba(7,11,19,.84);backdrop-filter:blur(14px);border-bottom:1px solid #243244}
+.header-inner{max-width:1500px;margin:auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:950}.brand img{width:42px;height:42px;border-radius:12px}.brand span{font-size:19px}.brand small{display:block;color:#7dd3fc;font-size:10px;letter-spacing:.12em}
+.nav{display:flex;gap:6px;flex-wrap:wrap}.nav button,.nav a{border:1px solid #334155;background:#0f172a;color:#cbd5e1;border-radius:999px;padding:7px 11px;text-decoration:none;font-size:12px;cursor:pointer}.nav button:hover,.nav a:hover{border-color:#38bdf8;color:white}
+.hero-banner{max-width:1500px;margin:16px auto 0;padding:0 16px}.hero-box{border:1px solid #31506b;border-radius:20px;padding:22px;background:linear-gradient(135deg,rgba(14,116,144,.22),rgba(15,23,42,.94));display:flex;justify-content:space-between;gap:18px;align-items:center;box-shadow:0 18px 50px #0005}.hero-box h1{margin:0;font-size:clamp(25px,4vw,42px)}.hero-box p{margin:8px 0 0;color:#b9c7d8}.feature-chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px}.feature-chips span{font-size:11px;border:1px solid #36546e;background:#07101e;border-radius:999px;padding:6px 9px;color:#bae6fd}.hero-action{min-width:180px}.hero-action button{width:100%;padding:12px;border:0;border-radius:12px;background:linear-gradient(135deg,#0284c7,#0f766e);color:white;font-weight:900;cursor:pointer}
+.title{margin-top:4px}.title h1{font-size:18px}.beta-badge{font-size:11px;background:#7c3aed;padding:4px 7px;border-radius:999px}
+.equipped-meter{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:9px 11px;border:1px solid #334155;background:#0b1220;border-radius:10px}.equipped-meter b{font-size:18px;color:#fbbf24}.equipped-meter b.complete{color:#34d399}
+.result-runes{display:grid;grid-template-columns:repeat(5,minmax(58px,1fr));gap:8px;margin:8px 0 14px}.result-rune{border:1px solid #334155;border-radius:10px;background:#0b1220;padding:7px;text-align:center}.result-rune img{width:48px;height:48px;border-radius:10px;display:block;margin:auto}.result-rune span{display:block;font-size:10px;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.footer{max-width:1500px;margin:18px auto 30px;padding:0 16px;color:#64748b;font-size:12px;text-align:center}.footer a{color:#7dd3fc}
+@media(max-width:760px){.header-inner{align-items:flex-start}.nav{justify-content:flex-end}.hero-box{display:block}.hero-action{margin-top:14px}.site-header{position:static}.result-runes{grid-template-columns:repeat(5,1fr)}.result-rune img{width:38px;height:38px}.result-rune span{display:none}}
+
+/* DinoLab v0.1 modules */
+.module-section{max-width:1500px;margin:18px auto;padding:22px 16px}.module-section.compact{padding-top:8px}.module-heading{display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:14px}.module-heading h2{margin:2px 0 4px;font-size:26px}.module-heading p{margin:0;color:var(--muted)}.eyebrow{font-size:11px;font-weight:900;letter-spacing:.16em;color:#7dd3fc}.filter-row{display:flex;gap:7px;flex-wrap:wrap}.filter-row button{border:1px solid #334155;background:#0f172a;color:#cbd5e1;border-radius:999px;padding:8px 12px;cursor:pointer}.filter-row button.active{border-color:#38bdf8;background:#0c4a6e;color:white}.encyclopedia-grid{display:grid;grid-template-columns:repeat(6,minmax(140px,1fr));gap:12px}.ency-card{position:relative;background:linear-gradient(145deg,#0b1220,#111827);border:1px solid #334155;border-radius:14px;padding:12px;min-height:184px;box-shadow:0 8px 22px #0003}.ency-card img{width:72px;height:72px;object-fit:cover;border-radius:16px;display:block;margin-bottom:10px}.ency-card h3{margin:0 0 4px;font-size:15px}.ency-card p{margin:0;color:var(--muted);font-size:12px;line-height:1.5}.ency-card .ency-grade{position:absolute;right:10px;top:10px;font-size:10px;font-weight:900}.ency-card button{margin-top:10px;width:100%;border:1px solid #334155;background:#172033;color:white;border-radius:8px;padding:7px;cursor:pointer}.feature-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.feature-grid article{background:#0b1220;border:1px solid #334155;border-radius:14px;padding:16px}.feature-grid b{display:block;margin-bottom:6px}.feature-grid span{color:var(--muted);font-size:13px}.footer{padding-bottom:34px}
+@media(max-width:1100px){.encyclopedia-grid{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:760px){.module-heading{display:block}.filter-row{margin-top:12px}.encyclopedia-grid{grid-template-columns:repeat(2,1fr)}.feature-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:430px){.encyclopedia-grid,.feature-grid{grid-template-columns:1fr}}
