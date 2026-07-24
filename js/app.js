@@ -27,7 +27,7 @@ let runStartedAt=0;
 let statusTimer=null;
 let qrCameraStream=null;
 let qrScanLoop=0;
-const APP_VERSION="0.19";
+const APP_VERSION="0.23";
 
 function displayGrade(raw){return ({"에픽/노랑":"에픽","초록":"레어","파랑":"일반"}[raw]||raw)}
 function availableMaxLevel(d){
@@ -113,7 +113,7 @@ function bind(){
  $("#stopBtn").onclick=stopWorker;
  $("#saveProfile").onclick=saveProfile;
  $("#loadProfile").onclick=()=>{const n=$("#profileSelect").value;if(n){applyProfile(JSON.parse(localStorage.getItem("titanWeb:profile:"+n)));}};
- $("#importJson").onclick=()=>$("#fileInput").click();
+ $("#importJson").onclick=()=>{const input=$("#fileInput");input.value="";input.click();};
  $("#fileInput").onchange=importJson;
  $("#exportJson").onclick=exportJson;
  $("#deleteProfile").onclick=deleteProfile;
@@ -142,8 +142,17 @@ function scrollToCalculatorTarget(selector,focusFirst=false){
  if(focusFirst)setTimeout(()=>document.querySelector("#nickname")?.focus({preventScroll:true}),120);
 }
 
+function rawStats(){
+ const s={};
+ FIELD_DEFS.forEach(([k,,type])=>{
+  const el=$("#"+k), value=el?.value??"";
+  s[k]=type==="number"?(value===""?"":Number(value)):value;
+ });
+ return s;
+}
 function stats(){
- const s={};FIELD_DEFS.forEach(([k,,type])=>s[k]=type==="number"?Number($("#"+k).value):$("#"+k).value);
+ const raw=rawStats(), s={...raw};
+ FIELD_DEFS.forEach(([k,,type])=>{if(type==="number")s[k]=Number(raw[k]||0)});
  if(s.baseHp/10+s.baseAtk<=0)throw Error("기본체력/10 + 기본공격력은 0보다 커야 합니다.");
  if(s.levelCap<=s.moveSpeed+s.constMove)throw Error("레벨캡은 총 이동속도보다 커야 합니다.");
  return s;
@@ -166,7 +175,7 @@ function refreshManualCombo(){
    if(owned.some(x=>x.name===prev))sel.value=prev;
  });
 }
-function profile(){return {stats:stats(),runes:runes()}}
+function profile(){return {stats:rawStats(),runes:runes()}}
 function applyProfile(p){
  if(!p)return;Object.entries(p.stats||{}).forEach(([k,v])=>{if($("#"+k))$("#"+k).value=v});
  const map=Object.fromEntries((p.runes||[]).map(x=>[x.name,x]));
@@ -203,13 +212,31 @@ function normalizeProfileDocument(doc){
  const runes=Array.isArray(doc.runes)?doc.runes:[];
  return {stats,runes:runes.map(x=>({name:x.name,level:Number(x.level||0),owned:Number(x.level||0)>0}))};
 }
-function importJson(e){
- const f=e.target.files[0];if(!f)return;const rd=new FileReader();
- rd.onload=()=>{try{const doc=JSON.parse(String(rd.result));const p=normalizeProfileDocument(doc);applyProfile(p);localStorage.setItem("titanWeb:last",JSON.stringify(p));setProfileHint(`${f.name} 불러오기 완료`);}catch(err){alert("JSON 불러오기 실패: "+err.message)}};
- rd.readAsText(f,"utf-8");e.target.value="";
+async function importJson(e){
+ const input=e.target, f=input.files?.[0];if(!f)return;
+ try{
+  const text=(await f.text()).replace(/^\uFEFF/,"").trim();
+  if(!text)throw Error("파일 내용이 비어 있습니다.");
+  const doc=JSON.parse(text), p=normalizeProfileDocument(doc);
+  applyProfile(p);
+  localStorage.setItem("titanWeb:last",JSON.stringify(p));
+  const name=(p.stats.nickname||doc.profileName||f.name.replace(/\.json$/i,"")||"불러온 프로필").trim();
+  localStorage.setItem("titanWeb:profile:"+name,JSON.stringify(p));
+  refreshProfiles(name);
+  setProfileHint(`${f.name} 불러오기 완료`);
+  alert(`${name} 프로필을 불러왔습니다.`);
+ }catch(err){alert("JSON 불러오기 실패: "+err.message)}
+ finally{input.value=""}
 }
 function exportJson(){
- try{const doc=makeProfileDocument();const blob=new Blob([JSON.stringify(doc,null,2)],{type:"application/json;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(doc.profileName||"타이탄프로필")+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);setProfileHint(a.download+" 저장 완료");}catch(err){alert(err.message)}
+ try{
+  const doc=makeProfileDocument(), blob=new Blob([JSON.stringify(doc,null,2)],{type:"application/json;charset=utf-8"});
+  const url=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=url;a.download=((doc.profileName||"타이탄프로필")+".json").replace(/[\\/:*?"<>|]/g,"_");
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  setProfileHint(a.download+" 저장 완료");
+ }catch(err){alert("JSON 내보내기 실패: "+err.message)}
 }
 function deleteProfile(){
  const n=$("#profileSelect").value;if(!n){alert("삭제할 프로필이 없습니다.");return}
@@ -542,7 +569,7 @@ function qrImageElement(){const box=$("#qrCanvas");return box.querySelector("can
 function downloadProfileQr(){
  const el=qrImageElement();if(!el){alert("먼저 QR을 생성해주세요.");return}
  let url;if(el.tagName==="CANVAS")url=el.toDataURL("image/png");else url=el.src;
- const a=document.createElement("a");a.href=url;a.download=((stats().nickname||"DinoLab_프로필")+"_QR.png").replace(/[\\/:*?\"<>|]/g,"_");a.click();
+ const a=document.createElement("a");a.href=url;a.download=((rawStats().nickname||"DinoLab_프로필")+"_QR.png").replace(/[\\/:*?\"<>|]/g,"_");a.click();
 }
 async function copyProfileQrCode(){try{await navigator.clipboard.writeText(makeProfileCode());setProfileHint("프로필 코드 복사 완료");alert("프로필 코드를 복사했습니다.")}catch(e){$("#qrCodeText").focus();$("#qrCodeText").select();alert("자동 복사가 안 되어 코드를 선택했습니다.")}}
 function importProfileCode(raw){

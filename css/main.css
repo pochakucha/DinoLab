@@ -454,3 +454,5 @@ button,input,select{touch-action:manipulation}
 /* v0.18: 시작 안내 피드백 */
 @keyframes attentionFlash{0%,100%{box-shadow:var(--panel-shadow,0 0 0 transparent)}35%{box-shadow:0 0 0 2px rgba(53,208,255,.75),0 0 28px rgba(53,208,255,.22)}}
 .attention-flash{animation:attentionFlash .9s ease-out}
+
+.hero-branding{margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.12);font-size:13px!important;line-height:1.55;color:var(--muted)!important;letter-spacing:.01em}.hero-branding strong{color:#dce9ff;font-weight:700}
