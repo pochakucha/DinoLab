@@ -2,7 +2,7 @@
   "id":"./",
   "name":"DinoLab 타이탄 룬 계산기",
   "short_name":"DinoLab",
-  "description":"공룡게임 타이탄 생존률, 최고딜 룬 조합, 최대 말뚝 레벨 계산기 v0.14",
+  "description":"공룡게임 타이탄 생존률, 최고딜 룬 조합, 최대 말뚝 레벨 계산기 v0.16",
   "start_url":"./",
   "scope":"./",
   "display":"standalone",

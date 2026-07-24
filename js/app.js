@@ -85,6 +85,14 @@ function init(){
  enableAutoSave();
 }
 function bind(){
+ document.querySelectorAll("[data-scroll]").forEach(btn=>{
+   btn.onclick=()=>{
+     const target=document.querySelector(btn.dataset.scroll);
+     if(!target)return;
+     target.scrollIntoView({behavior:"smooth",block:"start"});
+     if(btn.id==="heroStart")setTimeout(()=>document.querySelector("#baseHp")?.focus({preventScroll:true}),450);
+   };
+ });
  $("#calcSelected").onclick=()=>run("selected");
  $("#optimize").onclick=()=>run("optimize");
  $("#maxLevel").onclick=()=>run("maxLevel");
@@ -475,10 +483,6 @@ function renderRuneIconStrip(comboTextValue,targetId){
    return `<div class="result-rune"><span class="result-rune-name">${name}</span>${level?`<b>Lv.${level}</b>`:''}</div>`;
  }).join('');
 }
-window.addEventListener('DOMContentLoaded',()=>{
- document.querySelectorAll('[data-scroll]').forEach(btn=>btn.addEventListener('click',()=>document.querySelector(btn.dataset.scroll)?.scrollIntoView({behavior:'smooth'})));
-});
-
 
 const QR_PREFIX="DINOLAB1:";
 function compactProfileDocument(){
