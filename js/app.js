@@ -25,7 +25,7 @@ let lastRenderedResult=null;
 let deferredInstallPrompt=null;
 let runStartedAt=0;
 let statusTimer=null;
-const APP_VERSION="0.29";
+const APP_VERSION="0.29.1";
 
 function displayGrade(raw){return ({"에픽/노랑":"에픽","초록":"레어","파랑":"일반"}[raw]||raw)}
 function availableMaxLevel(d){
@@ -34,7 +34,7 @@ function availableMaxLevel(d){
 }
 
 function migrateLegacyProfiles(){
- const migrationKey="titanWeb:migration:v0.29";
+ const migrationKey="titanWeb:migration:v0.29.1";
  if(localStorage.getItem(migrationKey))return;
  // 초기 개발 버전에 포함됐던 제작자 기본 프로필만 1회 정리합니다.
  localStorage.removeItem("titanWeb:profile:포차쿠차쓰리");
@@ -101,7 +101,13 @@ function init(){
    localStorage.removeItem("titanWeb:last");
    localStorage.setItem("titanWeb:startupVersion",APP_VERSION);
  }
+ syncProfileName();
  enableAutoSave();
+}
+function syncProfileName(){
+ const el=$("#profileNameDisplay");
+ const nick=$("#nickname");
+ if(el)el.value=String(nick?.value||"").trim()||"프로필";
 }
 function bind(){
  document.querySelectorAll("[data-scroll]").forEach(btn=>{
@@ -118,6 +124,7 @@ function bind(){
  $("#deleteProfile").onclick=deleteProfile;
  $("#exportProfileCode").onclick=exportProfileCode;
  $("#importProfileCodeBtn").onclick=promptImportProfileCode;
+ $("#nickname").addEventListener("input",syncProfileName);
  $("#copyResult").onclick=()=>{let t=$("#result").innerText;const i=t.indexOf("상위 조합 비교");if(i!==-1)t=t.slice(0,i).trim();navigator.clipboard.writeText(t).then(()=>alert("결과를 복사했습니다."));};
  $("#saveResultImage").onclick=saveResultImage;
  $("#shareResult").onclick=shareResult;
@@ -176,9 +183,11 @@ function applyProfile(p){
    row.querySelector(".owned").checked=!!x?.owned;lv.value=x?.level||"";
  });
  refreshManualCombo();
+ syncProfileName();
 }
 function saveProfile(){
  const p=profile(), name=(p.stats.nickname||"프로필").trim();
+ syncProfileName();
  localStorage.setItem("titanWeb:profile:"+name,JSON.stringify(p));
  localStorage.setItem("titanWeb:last",JSON.stringify(p));refreshProfiles(name);setProfileHint(name+" 프로필을 이 기기에 임시 저장했습니다.");alert(name+" 프로필을 임시 저장했습니다.");
 }

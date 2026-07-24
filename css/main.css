@@ -496,3 +496,26 @@ button,input,select{touch-action:manipulation}
   .copy-row{grid-template-columns:1fr}
   .beta-badge{margin-left:0;margin-top:6px}
 }
+
+
+/* DinoLab v0.29.1 — profile workflow order */
+.profile-manager{display:grid;gap:10px}
+.profile-name-field{display:grid;gap:6px}
+.profile-name-field span{color:var(--muted);font-size:12px;font-weight:800}
+.profile-name-field input{width:100%;box-sizing:border-box;min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#07101e;color:#e5f2ff;font-size:15px;font-weight:800}
+.profile-save-row,.profile-load-row{display:grid;gap:8px}
+.profile-save-row{grid-template-columns:minmax(0,1fr) auto}
+.profile-save-row #deleteProfile{min-width:82px}
+.profile-load-row{grid-template-columns:minmax(0,1fr) minmax(170px,auto)}
+.profile-load-row select{min-width:0}
+.profile-wide-btn{width:100%;min-height:46px}
+@media(max-width:760px){
+  .profile-manager{gap:9px}
+  .profile-save-row .btn,.profile-load-row .btn,.profile-wide-btn{min-height:48px}
+  .profile-load-row{grid-template-columns:1fr}
+  .profile-load-row select{min-height:46px}
+}
+@media(max-width:390px){
+  .profile-save-row{grid-template-columns:1fr auto}
+  .profile-save-row #deleteProfile{min-width:76px}
+}
