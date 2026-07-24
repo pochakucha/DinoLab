@@ -25,7 +25,7 @@ let lastRenderedResult=null;
 let deferredInstallPrompt=null;
 let runStartedAt=0;
 let statusTimer=null;
-const APP_VERSION="0.26";
+const APP_VERSION="0.29";
 
 function displayGrade(raw){return ({"에픽/노랑":"에픽","초록":"레어","파랑":"일반"}[raw]||raw)}
 function availableMaxLevel(d){
@@ -33,7 +33,23 @@ function availableMaxLevel(d){
  return levels.length?Math.max(...levels):0;
 }
 
+function migrateLegacyProfiles(){
+ const migrationKey="titanWeb:migration:v0.29";
+ if(localStorage.getItem(migrationKey))return;
+ // 초기 개발 버전에 포함됐던 제작자 기본 프로필만 1회 정리합니다.
+ localStorage.removeItem("titanWeb:profile:포차쿠차쓰리");
+ const last=localStorage.getItem("titanWeb:last");
+ if(last){
+  try{
+   const parsed=JSON.parse(last);
+   if(String(parsed?.stats?.nickname||"").trim()==="포차쿠차쓰리")localStorage.removeItem("titanWeb:last");
+  }catch(_err){}
+ }
+ localStorage.setItem(migrationKey,"1");
+}
+
 function init(){
+ migrateLegacyProfiles();
  const form=$("#statsForm");
  FIELD_DEFS.forEach(([k,label,type,val])=>{
    const l=document.createElement("label"); l.textContent=label;
@@ -164,7 +180,7 @@ function applyProfile(p){
 function saveProfile(){
  const p=profile(), name=(p.stats.nickname||"프로필").trim();
  localStorage.setItem("titanWeb:profile:"+name,JSON.stringify(p));
- localStorage.setItem("titanWeb:last",JSON.stringify(p));refreshProfiles(name);setProfileHint(name+" 프로필 저장 완료");alert(name+" 프로필을 저장했습니다.");
+ localStorage.setItem("titanWeb:last",JSON.stringify(p));refreshProfiles(name);setProfileHint(name+" 프로필을 이 기기에 임시 저장했습니다.");alert(name+" 프로필을 임시 저장했습니다.");
 }
 function refreshProfiles(select){
  const names=Object.keys(localStorage).filter(k=>k.startsWith("titanWeb:profile:")).map(k=>k.slice(17)).sort();
