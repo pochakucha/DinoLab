@@ -519,3 +519,31 @@ button,input,select{touch-action:manipulation}
   .profile-save-row{grid-template-columns:1fr auto}
   .profile-save-row #deleteProfile{min-width:76px}
 }
+
+/* DinoLab v0.29.2 — mobile result readability fixes */
+@media(max-width:760px){
+  .result-runes{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .result-rune{min-width:0;min-height:72px;padding:9px 7px}
+  .result-rune .result-rune-name{display:block!important;font-size:13px!important;line-height:1.3;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;word-break:keep-all;overflow-wrap:anywhere;margin-top:0}
+  .result-rune b{display:block;font-size:12px;margin-top:5px}
+  .result-runes .result-rune:last-child:nth-child(odd){grid-column:1/-1}
+
+  .ranking-wrap{overflow:visible;border:0;background:transparent;margin-left:0;margin-right:0}
+  .ranking-table{display:block;min-width:0;width:100%;background:transparent}
+  .ranking-table thead{display:none}
+  .ranking-table tbody{display:grid;gap:10px}
+  .ranking-table tr{display:grid;grid-template-columns:1fr 1fr;gap:7px 10px;padding:12px;border:1px solid #334155;border-radius:12px;background:#0b1220}
+  .ranking-table td{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0;border:0;text-align:right!important;font-size:12px;white-space:normal;min-width:0}
+  .ranking-table td::before{color:#94a3b8;font-weight:700;flex:0 0 auto}
+  .ranking-table td:nth-child(1)::before{content:"순위"}
+  .ranking-table td:nth-child(2)::before{content:"판정"}
+  .ranking-table td:nth-child(3)::before{content:"생존률"}
+  .ranking-table td:nth-child(4)::before{content:"95% 하한"}
+  .ranking-table td:nth-child(5)::before{content:"총딜"}
+  .ranking-table td:nth-child(6){grid-column:1/-1;display:block;text-align:left!important;padding-top:6px;border-top:1px solid #243247;overflow:visible;max-width:none}
+  .ranking-table td:nth-child(6)::before{content:"조합";display:block;margin-bottom:5px}
+  .ranking-table td:nth-child(7){grid-column:1/-1}
+  .ranking-table td:nth-child(7)::before{content:""}
+  .ranking-table td:nth-child(7) .btn{width:100%;min-height:42px}
+  .combo-cell{max-width:none;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.45}
+}
