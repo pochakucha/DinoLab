@@ -1,5 +1,4 @@
 const EXCLUSIVE = [["압축","매머드"]];
-const DURATION = 3000;
 const FIELD_DEFS = [
  ["nickname","닉네임","text",""],
  ["levelCap","레벨캡","number",1400],
@@ -16,7 +15,8 @@ const FIELD_DEFS = [
  ["extraBoth","공체증가%","number",""],
  ["titanLevel","타이탄레벨","number",""],
  ["simulations","기본 시뮬횟수","number",3000],
- ["target","목표생존률%","number",90]
+ ["target","목표생존률%","number",90],
+ ["durationMinutes","목표시간(분)","number",50]
 ];
 const $=s=>document.querySelector(s);
 let worker=null;
@@ -27,7 +27,7 @@ let runStartedAt=0;
 let statusTimer=null;
 let qrCameraStream=null;
 let qrScanLoop=0;
-const APP_VERSION="0.23";
+const APP_VERSION="0.25";
 
 function displayGrade(raw){return ({"에픽/노랑":"에픽","초록":"레어","파랑":"일반"}[raw]||raw)}
 function availableMaxLevel(d){
@@ -154,6 +154,7 @@ function stats(){
  const raw=rawStats(), s={...raw};
  FIELD_DEFS.forEach(([k,,type])=>{if(type==="number")s[k]=Number(raw[k]||0)});
  if(s.baseHp/10+s.baseAtk<=0)throw Error("기본체력/10 + 기본공격력은 0보다 커야 합니다.");
+ if(s.durationMinutes<=0)throw Error("목표시간은 0분보다 커야 합니다.");
  if(s.levelCap<=s.moveSpeed+s.constMove)throw Error("레벨캡은 총 이동속도보다 커야 합니다.");
  return s;
 }
@@ -297,6 +298,10 @@ function verifyCurrentResult(){
  if(!combo||combo.length!==5){alert("검증할 룬 조합 정보가 없습니다.");return}
  run("verify",combo);
 }
+function formatDuration(minutes){
+ const m=Math.max(1,Number(minutes)||50);
+ return Number.isInteger(m)?`${m}분`:`${m.toFixed(1)}분`;
+}
 function resultSummaryText(){
  if(!lastRenderedResult)return "";
  const {payload:p,mode,stats:s}=lastRenderedResult;
@@ -304,7 +309,7 @@ function resultSummaryText(){
  if(mode==="optimize"){title="DinoLab 추천 조합";combo=p.recommended.combo;r=p.recommended.result}
  else if(mode==="maxLevel"){title=`DinoLab 최대 말뚝 Lv.${p.level}`;combo=p.combo;r=p.result}
  else{title=mode==="verify"?"DinoLab 30,000회 검증":"DinoLab 선택 조합";combo=p.combo;r=p.result}
- return `${title}\n${s.nickname||"프로필"} · 타이탄 Lv.${s.titanLevel}\n${combo}\n생존률 ${pct(r.survival)} · 95% 신뢰구간 ${pct(r.ciLow)} ~ ${pct(r.ciHigh)}\n50분 총딜 ${num(r.damage)}\nhttps://pochakucha.github.io/DinoLab/`;
+ return `${title}\n${s.nickname||"프로필"} · 타이탄 Lv.${s.titanLevel}\n${combo}\n생존률 ${pct(r.survival)} · 95% 신뢰구간 ${pct(r.ciLow)} ~ ${pct(r.ciHigh)}\n${formatDuration(s.durationMinutes)} 총딜 ${num(r.damage)}\nhttps://pochakucha.github.io/DinoLab/`;
 }
 async function shareResult(){
  const text=resultSummaryText();if(!text){alert("먼저 계산을 실행하세요.");return}
@@ -319,12 +324,13 @@ function interpretation(r,target){
 }
 function render(p,mode,target){
  setStatus("계산 완료",100);
- lastRenderedResult={payload:p,mode,target,stats:stats()};
+ const currentStats=stats(), durationText=formatDuration(currentStats.durationMinutes);
+ lastRenderedResult={payload:p,mode,target,stats:currentStats};
  if(mode==="selected"||mode==="verify"){
    const r=p.result, cls=r.wilson*100>=target?"goodtxt":"warntxt";
    const verified=mode==="verify";
    $("#result").innerHTML=`<div class="hero"><h2>${verified?"30,000회 재검증 결과":"선택한 5룬 정밀 결과"}</h2><div id="primaryRuneStrip" class="result-runes"></div><h3>${p.combo}</h3>
-   <div class="cards"><div class="card"><span>생존률</span><b class="${cls}">${pct(r.survival)}</b></div><div class="card"><span>95% 신뢰구간</span><b class="${cls}">${pct(r.ciLow)} ~ ${pct(r.ciHigh)}</b></div><div class="card"><span>50분 총딜</span><b>${num(r.damage)}</b></div></div>
+   <div class="cards"><div class="card"><span>생존률</span><b class="${cls}">${pct(r.survival)}</b></div><div class="card"><span>95% 신뢰구간</span><b class="${cls}">${pct(r.ciLow)} ~ ${pct(r.ciHigh)}</b></div><div class="card"><span>${durationText} 총딜</span><b>${num(r.damage)}</b></div></div>
    <p>시뮬레이션 ${num(r.sims)}회 · 평균 생존시간 ${(r.time/60).toFixed(1)}분 · 최종체력 ${num(r.hp)} · 일반공격 ${num(r.atk)} · 보스공격 ${num(r.bossAtk)}</p><div class="analysis-note"><b>결과 해석</b><span>${interpretation(r,target)}</span></div><div class="result-actions"><button class="btn good" id="verifyResult">30,000회 재검증</button></div></div>`;
  }else if(mode==="maxLevel"){
    $("#result").innerHTML=`<div class="hero"><h2>현재 5룬 최대 말뚝 레벨</h2><div id="primaryRuneStrip" class="result-runes"></div><h3>${p.combo}</h3>
@@ -332,7 +338,7 @@ function render(p,mode,target){
  }else{
    const r=p.recommended.result,b=p.barrier?.result;
    let html=`<div class="hero"><h2>최종 추천 룬 조합</h2><div id="primaryRuneStrip" class="result-runes"></div><h3>${p.recommended.combo}</h3>
-   <div class="cards"><div class="card"><span>생존률</span><b class="goodtxt">${pct(r.survival)}</b></div><div class="card"><span>95% 신뢰구간</span><b class="goodtxt">${pct(r.ciLow)} ~ ${pct(r.ciHigh)}</b></div><div class="card"><span>50분 총딜</span><b>${num(r.damage)}</b></div></div><p>최종 검증 ${num(r.sims)}회</p>
+   <div class="cards"><div class="card"><span>생존률</span><b class="goodtxt">${pct(r.survival)}</b></div><div class="card"><span>95% 신뢰구간</span><b class="goodtxt">${pct(r.ciLow)} ~ ${pct(r.ciHigh)}</b></div><div class="card"><span>${durationText} 총딜</span><b>${num(r.damage)}</b></div></div><p>최종 검증 ${num(r.sims)}회</p>
    <div class="analysis-note"><b>결과 해석</b><span>${interpretation(r,target)}</span></div><div class="result-actions"><button class="btn warn" id="useRecommendedMax">이 룬 조합으로 최대 말뚝레벨 구하기</button><button class="btn good" id="verifyResult">추천 조합 30,000회 재검증</button></div>`;
    if(p.barrier)html+=`<h2>방어벽 포함 최고 조합</h2><h3>${p.barrier.combo}</h3><p>생존 ${pct(b.survival)} · 하한 ${pct(b.ciLow)} · 총딜 ${num(b.damage)} · 추천 대비 ${num(b.damage-r.damage)}</p>`;
    html+=`<h2>상위 조합 비교</h2><div class="ranking-wrap"><table class="ranking-table"><thead><tr><th>순위</th><th>판정</th><th>생존률</th><th>95% 하한</th><th>총딜</th><th>조합</th><th></th></tr></thead><tbody>${p.ranking.slice(0,10).map((x,i)=>`<tr><td>${i+1}</td><td>${x.result.wilson*100>=target?'<span class="stable-pill">안정권</span>':'<span class="fail-pill">미달</span>'}</td><td>${pct(x.result.survival)}</td><td>${pct(x.result.ciLow)}</td><td>${num(x.result.damage)}</td><td class="combo-cell">${x.combo}</td><td><button class="btn mini apply-ranked" data-combo="${encodeURIComponent(x.combo)}">적용</button></td></tr>`).join("")}</tbody></table></div>`;
@@ -370,9 +376,9 @@ function saveResultImage(){
  if(!lastRenderedResult){alert("먼저 계산을 실행하세요.");return}
  const {payload:p,mode,stats:s}=lastRenderedResult;
  let title="DinoLab 타이탄 계산 결과",combo="",lines=[];
- if(mode==="optimize"){const r=p.recommended.result;title="DinoLab 최적 룬 조합";combo=p.recommended.combo;lines=[`타이탄 Lv.${s.titanLevel}`,`생존률 ${pct(r.survival)}`,`95% 신뢰구간 ${pct(r.ciLow)} ~ ${pct(r.ciHigh)}`,`50분 총딜 ${num(r.damage)}`]}
+ if(mode==="optimize"){const r=p.recommended.result;title="DinoLab 최적 룬 조합";combo=p.recommended.combo;lines=[`타이탄 Lv.${s.titanLevel}`,`생존률 ${pct(r.survival)}`,`95% 신뢰구간 ${pct(r.ciLow)} ~ ${pct(r.ciHigh)}`,`${formatDuration(s.durationMinutes)} 총딜 ${num(r.damage)}`]}
  else if(mode==="maxLevel"){title="DinoLab 최대 말뚝 레벨";combo=p.combo;lines=[`최대 안정 타이탄 Lv.${p.level}`,`생존률 ${pct(p.result.survival)}`,`95% 신뢰구간 ${pct(p.result.ciLow)} ~ ${pct(p.result.ciHigh)}`]}
- else{const r=p.result;title="DinoLab 선택 조합 결과";combo=p.combo;lines=[`타이탄 Lv.${s.titanLevel}`,`생존률 ${pct(r.survival)}`,`95% 신뢰구간 ${pct(r.ciLow)} ~ ${pct(r.ciHigh)}`,`50분 총딜 ${num(r.damage)}`]}
+ else{const r=p.result;title="DinoLab 선택 조합 결과";combo=p.combo;lines=[`타이탄 Lv.${s.titanLevel}`,`생존률 ${pct(r.survival)}`,`95% 신뢰구간 ${pct(r.ciLow)} ~ ${pct(r.ciHigh)}`,`${formatDuration(s.durationMinutes)} 총딜 ${num(r.damage)}`]}
  const canvas=document.createElement("canvas");canvas.width=1080;canvas.height=1080;const c=canvas.getContext("2d");
  c.fillStyle="#07101e";c.fillRect(0,0,1080,1080);c.fillStyle="#15c8a4";c.fillRect(0,0,1080,18);
  c.fillStyle="#ffffff";c.font="700 56px sans-serif";c.fillText(title,70,110);c.font="400 30px sans-serif";c.fillStyle="#a9b6c9";c.fillText(s.nickname||"프로필",70,160);
@@ -434,13 +440,14 @@ function wilsonInterval(k,n){
 }
 function percentile(sorted,q){if(!sorted.length)return 0;const i=(sorted.length-1)*q,lo=Math.floor(i),hi=Math.ceil(i);return sorted[lo]+(sorted[hi]-sorted[lo])*(i-lo)}
 function simulateBatch(s,data,combo,sims){
+ const duration=Math.max(1,Math.round(Number(s.durationMinutes||50)*60));
  const st=finalStats(s,data,combo),{hp,atk,bossAtk,t,skills}=st;
  const incoming=Math.max(0,titanDamage(s.titanLevel)-s.titanReduction-t.drFlat);
  const lsP=clamp(t.lsChance),lsAmt=atk*Math.max(0,t.lsPct),healP=clamp(t.healChance),healAmt=hp*Math.max(0,t.healPct),drP=clamp(t.drChance),drAmt=t.drProc;
  let survive=0,damageSum=0,timeSum=0;const deathTimes=[];
  for(let n=0;n<sims;n++){
-  let cur=hp,damage=0,aliveTime=3000;
-  for(let sec=1;sec<=3000;sec++){
+  let cur=hp,damage=0,aliveTime=duration;
+  for(let sec=1;sec<=duration;sec++){
    damage+=bossAtk;
    if(Math.random()<lsP)cur=Math.min(hp,cur+lsAmt);
    if(Math.random()<healP)cur=Math.min(hp,cur+healAmt);
@@ -451,7 +458,7 @@ function simulateBatch(s,data,combo,sims){
   damageSum+=damage;timeSum+=aliveTime;
  }
  deathTimes.sort((a,b)=>a-b);const ci=wilsonInterval(survive,sims);
- return {survive,sims,survival:survive/sims,wilson:ci.low,ciLow:ci.low,ciHigh:ci.high,damage:damageSum/sims,time:timeSum/sims,p10:percentile(deathTimes,.1)||3000,p50:percentile(deathTimes,.5)||3000,p90:percentile(deathTimes,.9)||3000,hp,atk,bossAtk};
+ return {survive,sims,survival:survive/sims,wilson:ci.low,ciLow:ci.low,ciHigh:ci.high,damage:damageSum/sims,time:timeSum/sims,p10:percentile(deathTimes,.1)||duration,p50:percentile(deathTimes,.5)||duration,p90:percentile(deathTimes,.9)||duration,hp,atk,bossAtk};
 }
 function mergeResults(parts){
  const sims=parts.reduce((a,x)=>a+x.sims,0),survive=parts.reduce((a,x)=>a+x.survive,0),ci=wilsonInterval(survive,sims),last=parts[parts.length-1];
@@ -477,7 +484,8 @@ function analytic(s,data,c){
  const incoming=Math.max(0,titanDamage(s.titanLevel)-s.titanReduction-t.drFlat),dr=t.drChance*Math.min(incoming,t.drProc);
  const heal=3*clamp(t.lsChance)*st.atk*Math.max(0,t.lsPct)+3*clamp(t.healChance)*st.hp*Math.max(0,t.healPct);
  let skill=0;for(const e of st.skills)skill+=clamp(e.skillChance)*Math.max(0,e.skillPct);
- return {survivalScore:heal-(incoming-dr)+st.hp/1000,damage:3000*st.bossAtk*(1+skill)};
+ const duration=Math.max(1,Math.round(Number(s.durationMinutes||50)*60));
+ return {survivalScore:heal-(incoming-dr)+st.hp/1000,damage:duration*st.bossAtk*(1+skill)};
 }
 function pickCandidates(s,data,all){
  const scored=all.map(c=>({c,...analytic(s,data,c)})),map=new Map(),add=a=>a.forEach(x=>map.set(comboText(x.c),x.c));
