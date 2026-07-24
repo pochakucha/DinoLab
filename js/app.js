@@ -25,9 +25,7 @@ let lastRenderedResult=null;
 let deferredInstallPrompt=null;
 let runStartedAt=0;
 let statusTimer=null;
-let qrCameraStream=null;
-let qrScanLoop=0;
-const APP_VERSION="0.25";
+const APP_VERSION="0.26";
 
 function displayGrade(raw){return ({"에픽/노랑":"에픽","초록":"레어","파랑":"일반"}[raw]||raw)}
 function availableMaxLevel(d){
@@ -113,20 +111,9 @@ function bind(){
  $("#stopBtn").onclick=stopWorker;
  $("#saveProfile").onclick=saveProfile;
  $("#loadProfile").onclick=()=>{const n=$("#profileSelect").value;if(n){applyProfile(JSON.parse(localStorage.getItem("titanWeb:profile:"+n)));}};
- $("#importJson").onclick=()=>{const input=$("#fileInput");input.value="";input.click();};
- $("#fileInput").onchange=importJson;
- $("#exportJson").onclick=exportJson;
  $("#deleteProfile").onclick=deleteProfile;
- $("#makeQr").onclick=()=>openQrModal("create");
- $("#scanQr").onclick=()=>openQrModal("scan");
- $("#closeQr").onclick=closeQrModal;
- document.querySelectorAll("[data-close-qr]").forEach(x=>x.onclick=closeQrModal);
- $("#downloadQr").onclick=downloadProfileQr;
- $("#copyQrCode").onclick=copyProfileQrCode;
- $("#startQrCamera").onclick=startQrCamera;
- $("#stopQrCamera").onclick=stopQrCamera;
- $("#qrImageInput").onchange=scanQrImageFile;
- $("#importQrText").onclick=()=>importProfileCode($("#qrImportText").value);
+ $("#exportProfileCode").onclick=exportProfileCode;
+ $("#importProfileCodeBtn").onclick=promptImportProfileCode;
  $("#copyResult").onclick=()=>{let t=$("#result").innerText;const i=t.indexOf("상위 조합 비교");if(i!==-1)t=t.slice(0,i).trim();navigator.clipboard.writeText(t).then(()=>alert("결과를 복사했습니다."));};
  $("#saveResultImage").onclick=saveResultImage;
  $("#shareResult").onclick=shareResult;
@@ -194,50 +181,6 @@ function saveProfile(){
 function refreshProfiles(select){
  const names=Object.keys(localStorage).filter(k=>k.startsWith("titanWeb:profile:")).map(k=>k.slice(17)).sort();
  $("#profileSelect").innerHTML=names.map(n=>`<option ${n===select?"selected":""}>${n}</option>`).join("");
-}
-function makeProfileDocument(){
- const p=profile();
- return {
-  profileVersion:3,
-  appVersion:APP_VERSION,
-  gameVersion:"2026.07.23",
-  savedAt:new Date().toISOString(),
-  profileName:(p.stats.nickname||"프로필").trim(),
-  stats:p.stats,
-  runes:p.runes.map(({name,level})=>({name,level}))
- };
-}
-function normalizeProfileDocument(doc){
- if(!doc||typeof doc!=="object")throw Error("올바른 JSON 프로필이 아닙니다.");
- const stats=doc.stats||{};
- const runes=Array.isArray(doc.runes)?doc.runes:[];
- return {stats,runes:runes.map(x=>({name:x.name,level:Number(x.level||0),owned:Number(x.level||0)>0}))};
-}
-async function importJson(e){
- const input=e.target, f=input.files?.[0];if(!f)return;
- try{
-  const text=(await f.text()).replace(/^\uFEFF/,"").trim();
-  if(!text)throw Error("파일 내용이 비어 있습니다.");
-  const doc=JSON.parse(text), p=normalizeProfileDocument(doc);
-  applyProfile(p);
-  localStorage.setItem("titanWeb:last",JSON.stringify(p));
-  const name=(p.stats.nickname||doc.profileName||f.name.replace(/\.json$/i,"")||"불러온 프로필").trim();
-  localStorage.setItem("titanWeb:profile:"+name,JSON.stringify(p));
-  refreshProfiles(name);
-  setProfileHint(`${f.name} 불러오기 완료`);
-  alert(`${name} 프로필을 불러왔습니다.`);
- }catch(err){alert("JSON 불러오기 실패: "+err.message)}
- finally{input.value=""}
-}
-function exportJson(){
- try{
-  const doc=makeProfileDocument(), blob=new Blob([JSON.stringify(doc,null,2)],{type:"application/json;charset=utf-8"});
-  const url=URL.createObjectURL(blob), a=document.createElement("a");
-  a.href=url;a.download=((doc.profileName||"타이탄프로필")+".json").replace(/[\\/:*?"<>|]/g,"_");
-  document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1500);
-  setProfileHint(a.download+" 저장 완료");
- }catch(err){alert("JSON 내보내기 실패: "+err.message)}
 }
 function deleteProfile(){
  const n=$("#profileSelect").value;if(!n){alert("삭제할 프로필이 없습니다.");return}
@@ -541,7 +484,7 @@ function renderRuneIconStrip(comboTextValue,targetId){
  }).join('');
 }
 
-const QR_PREFIX="DINOLAB1:";
+const PROFILE_CODE_PREFIX="DINOLAB1:";
 function compactProfileDocument(){
  const p=profile();
  const statKeys=FIELD_DEFS.map(x=>x[0]);
@@ -553,52 +496,35 @@ function encodeUtf8Base64(text){
 function decodeUtf8Base64(text){
  let b64=text.replace(/-/g,"+").replace(/_/g,"/");while(b64.length%4)b64+="=";const bin=atob(b64),bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));return new TextDecoder().decode(bytes);
 }
-function makeProfileCode(){return QR_PREFIX+encodeUtf8Base64(JSON.stringify(compactProfileDocument()))}
+function makeProfileCode(){return PROFILE_CODE_PREFIX+encodeUtf8Base64(JSON.stringify(compactProfileDocument()))}
 function parseProfileCode(raw){
- const text=String(raw||"").trim();if(!text.startsWith(QR_PREFIX))throw Error("DinoLab 프로필 코드가 아닙니다.");
- const doc=JSON.parse(decodeUtf8Base64(text.slice(QR_PREFIX.length)));if(doc.v!==1||!Array.isArray(doc.s)||!Array.isArray(doc.r))throw Error("지원하지 않는 프로필 코드입니다.");
+ const text=String(raw||"").trim();if(!text.startsWith(PROFILE_CODE_PREFIX))throw Error("DinoLab 프로필 코드가 아닙니다.");
+ const doc=JSON.parse(decodeUtf8Base64(text.slice(PROFILE_CODE_PREFIX.length)));if(doc.v!==1||!Array.isArray(doc.s)||!Array.isArray(doc.r))throw Error("지원하지 않는 프로필 코드입니다.");
  const statKeys=FIELD_DEFS.map(x=>x[0]),stats={};statKeys.forEach((k,i)=>stats[k]=doc.s[i]);if(doc.n)stats.nickname=doc.n;
  return {stats,runes:doc.r.map(x=>({name:String(x[0]),level:Number(x[1]||0),owned:Number(x[1]||0)>0}))};
 }
-function openQrModal(mode){
+async function exportProfileCode(){
+ const code=makeProfileCode();
  try{
-  const modal=$("#qrModal"),create=$("#qrCreatePane"),scan=$("#qrScanPane");modal.hidden=false;modal.setAttribute("aria-hidden","false");
-  create.hidden=mode!=="create";scan.hidden=mode!=="scan";$("#qrTitle").textContent=mode==="create"?"프로필 QR 공유":"프로필 QR 가져오기";
-  if(mode==="create")renderProfileQr();else{$("#qrStatus").textContent="대기 중";$("#qrImportText").value=""}
- }catch(err){alert("QR 준비 실패: "+err.message)}
+  await navigator.clipboard.writeText(code);
+  setProfileHint("프로필 코드 복사 완료");
+  alert("프로필 코드를 복사했습니다.");
+ }catch(err){
+  prompt("아래 프로필 코드를 직접 복사하세요.",code);
+ }
 }
-function closeQrModal(){stopQrCamera();const modal=$("#qrModal");modal.hidden=true;modal.setAttribute("aria-hidden","true")}
-function renderProfileQr(){
- const code=makeProfileCode(),box=$("#qrCanvas");box.innerHTML="";$("#qrCodeText").value=code;
- if(typeof QRCode==="undefined")throw Error("QR 생성 라이브러리를 불러오지 못했습니다.");
- new QRCode(box,{text:code,width:256,height:256,colorDark:"#000000",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.L});
+function promptImportProfileCode(){
+ const raw=prompt("DINOLAB1: 로 시작하는 프로필 코드를 붙여넣으세요.");
+ if(raw===null)return;
+ importProfileCode(raw);
 }
-function qrImageElement(){const box=$("#qrCanvas");return box.querySelector("canvas")||box.querySelector("img")}
-function downloadProfileQr(){
- const el=qrImageElement();if(!el){alert("먼저 QR을 생성해주세요.");return}
- let url;if(el.tagName==="CANVAS")url=el.toDataURL("image/png");else url=el.src;
- const a=document.createElement("a");a.href=url;a.download=((rawStats().nickname||"DinoLab_프로필")+"_QR.png").replace(/[\\/:*?\"<>|]/g,"_");a.click();
-}
-async function copyProfileQrCode(){try{await navigator.clipboard.writeText(makeProfileCode());setProfileHint("프로필 코드 복사 완료");alert("프로필 코드를 복사했습니다.")}catch(e){$("#qrCodeText").focus();$("#qrCodeText").select();alert("자동 복사가 안 되어 코드를 선택했습니다.")}}
 function importProfileCode(raw){
- try{const p=parseProfileCode(raw);applyProfile(p);localStorage.setItem("titanWeb:last",JSON.stringify(p));const name=(p.stats.nickname||"받은 프로필").trim();localStorage.setItem("titanWeb:profile:"+name,JSON.stringify(p));refreshProfiles(name);setProfileHint(name+" QR 프로필 불러오기 완료");stopQrCamera();closeQrModal();alert(name+" 프로필을 불러왔습니다.")}catch(err){$("#qrStatus").textContent="실패: "+err.message;alert("QR 불러오기 실패: "+err.message)}
-}
-async function startQrCamera(){
- const status=$("#qrStatus");if(!window.BarcodeDetector){status.textContent="이 브라우저는 카메라 QR 판독을 지원하지 않습니다. QR 이미지 선택 또는 코드 붙여넣기를 이용하세요.";return}
  try{
-  stopQrCamera();const supported=await BarcodeDetector.getSupportedFormats();if(!supported.includes("qr_code"))throw Error("QR 형식을 지원하지 않는 브라우저입니다.");
-  qrCameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});const video=$("#qrVideo");video.srcObject=qrCameraStream;await video.play();status.textContent="카메라에서 QR을 찾는 중…";
-  const detector=new BarcodeDetector({formats:["qr_code"]});const token=++qrScanLoop;
-  const loop=async()=>{if(token!==qrScanLoop||!qrCameraStream)return;try{const codes=await detector.detect(video);if(codes[0]?.rawValue){importProfileCode(codes[0].rawValue);return}}catch(e){}requestAnimationFrame(loop)};loop();
- }catch(err){status.textContent="카메라 시작 실패: "+err.message}
+  const p=parseProfileCode(raw);applyProfile(p);localStorage.setItem("titanWeb:last",JSON.stringify(p));
+  const name=(p.stats.nickname||"받은 프로필").trim();localStorage.setItem("titanWeb:profile:"+name,JSON.stringify(p));refreshProfiles(name);
+  setProfileHint(name+" 프로필 코드 불러오기 완료");alert(name+" 프로필을 불러왔습니다.");
+ }catch(err){alert("프로필 코드 불러오기 실패: "+err.message)}
 }
-function stopQrCamera(){qrScanLoop++;if(qrCameraStream){qrCameraStream.getTracks().forEach(t=>t.stop());qrCameraStream=null}const video=$("#qrVideo");if(video)video.srcObject=null}
-async function scanQrImageFile(e){
- const file=e.target.files?.[0];if(!file)return;const status=$("#qrStatus");
- status.textContent="선택한 QR 이미지를 읽는 중…";
- try{if(!window.BarcodeDetector)throw Error("이 브라우저는 이미지 QR 판독을 지원하지 않습니다. 프로필 코드를 직접 붙여넣어 주세요.");const bitmap=await createImageBitmap(file);const detector=new BarcodeDetector({formats:["qr_code"]});const codes=await detector.detect(bitmap);bitmap.close?.();if(!codes.length)throw Error("이미지에서 QR을 찾지 못했습니다.");importProfileCode(codes[0].rawValue)}catch(err){status.textContent="이미지 판독 실패: "+err.message;alert(status.textContent)}finally{e.target.value=""}
-}
-window.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#qrModal")?.hidden)closeQrModal()});
 
 window.addEventListener("hashchange",()=>{if(location.hash==="#calculator")scrollToCalculatorTarget("#calculator",false)});
 init();
