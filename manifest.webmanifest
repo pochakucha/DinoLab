@@ -1,0 +1,19 @@
+{
+  "id":"./",
+  "name":"DinoLab 타이탄 룬 계산기",
+  "short_name":"DinoLab",
+  "description":"공룡게임 타이탄 생존률, 최고딜 룬 조합, 최대 말뚝 레벨 계산기 v0.14",
+  "start_url":"./",
+  "scope":"./",
+  "display":"standalone",
+  "display_override":["window-controls-overlay","standalone","minimal-ui"],
+  "orientation":"portrait-primary",
+  "background_color":"#07101e",
+  "theme_color":"#07101e",
+  "lang":"ko-KR",
+  "categories":["games","utilities"],
+  "icons":[
+    {"src":"icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
+}

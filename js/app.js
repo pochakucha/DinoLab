@@ -21,6 +21,12 @@ const FIELD_DEFS = [
 const $=s=>document.querySelector(s);
 let worker=null;
 let autoSaveTimer=null;
+let lastRenderedResult=null;
+let deferredInstallPrompt=null;
+let runStartedAt=0;
+let statusTimer=null;
+let qrCameraStream=null;
+let qrScanLoop=0;
 
 function displayGrade(raw){return ({"에픽/노랑":"에픽","초록":"레어","파랑":"일반"}[raw]||raw)}
 function availableMaxLevel(d){
@@ -62,10 +68,11 @@ function init(){
    const row=document.createElement("div");row.className="rune-row grade-"+grade;row.dataset.name=name;
    row.innerHTML=`<div class="rune-toggles"><label><input class="owned" type="checkbox" aria-label="${name} 보유"><span>보유</span></label></div>
    <div class="rune-title"><span class="rune-name">${name}</span><span class="grade grade-${grade}">${grade}</span></div>
-   <label class="rune-level"><span>Lv.</span><input class="level" type="number" min="0" max="${availableMaxLevel(d)}" value="0"></label>`;
+   <label class="rune-level"><span>Lv.</span><input class="level" type="number" min="1" max="${availableMaxLevel(d)}" value="" placeholder="레벨" inputmode="numeric"></label>`;
    const owned=row.querySelector(".owned"), level=row.querySelector(".level");
+   level.addEventListener("focus",()=>{if(level.value==="0")level.value=""});
    level.addEventListener("input",()=>{owned.checked=Number(level.value)>0;refreshManualCombo()});
-   owned.addEventListener("change",()=>{if(owned.checked&&Number(level.value)<=0)level.value=availableMaxLevel(d);if(!owned.checked)level.value=0;refreshManualCombo()});
+   owned.addEventListener("change",()=>{if(owned.checked&&Number(level.value)<=0)level.value=availableMaxLevel(d);if(!owned.checked)level.value="";refreshManualCombo()});
    box.append(row);
  });
  const manual=$("#manualCombo");
@@ -88,8 +95,22 @@ function bind(){
  $("#fileInput").onchange=importJson;
  $("#exportJson").onclick=exportJson;
  $("#deleteProfile").onclick=deleteProfile;
+ $("#makeQr").onclick=()=>openQrModal("create");
+ $("#scanQr").onclick=()=>openQrModal("scan");
+ $("#closeQr").onclick=closeQrModal;
+ document.querySelectorAll("[data-close-qr]").forEach(x=>x.onclick=closeQrModal);
+ $("#downloadQr").onclick=downloadProfileQr;
+ $("#copyQrCode").onclick=copyProfileQrCode;
+ $("#startQrCamera").onclick=startQrCamera;
+ $("#stopQrCamera").onclick=stopQrCamera;
+ $("#pickQrImage").onclick=()=>$("#qrImageInput").click();
+ $("#qrImageInput").onchange=scanQrImageFile;
+ $("#importQrText").onclick=()=>importProfileCode($("#qrImportText").value);
  $("#copyResult").onclick=()=>navigator.clipboard.writeText($("#result").innerText).then(()=>alert("결과를 복사했습니다."));
+ $("#saveResultImage").onclick=saveResultImage;
+ $("#shareResult").onclick=shareResult;
  $("#resetForm").onclick=()=>{if(confirm("입력값과 룬 선택을 초기화할까요?")){localStorage.removeItem("titanWeb:last");location.reload();}};
+ const installBtn=$("#installApp");if(installBtn)installBtn.onclick=installPwa;
 }
 function stats(){
  const s={};FIELD_DEFS.forEach(([k,,type])=>s[k]=type==="number"?Number($("#"+k).value):$("#"+k).value);
@@ -121,7 +142,7 @@ function applyProfile(p){
  const map=Object.fromEntries((p.runes||[]).map(x=>[x.name,x]));
  document.querySelectorAll(".rune-row").forEach(row=>{
    const x=map[row.dataset.name], lv=row.querySelector(".level");
-   row.querySelector(".owned").checked=!!x?.owned;lv.value=x?.level||0;
+   row.querySelector(".owned").checked=!!x?.owned;lv.value=x?.level||"";
  });
  refreshManualCombo();
 }
@@ -138,7 +159,7 @@ function makeProfileDocument(){
  const p=profile();
  return {
   profileVersion:3,
-  appVersion:"0.10",
+  appVersion:"0.15",
   gameVersion:"2026.07.23",
   savedAt:new Date().toISOString(),
   profileName:(p.stats.nickname||"프로필").trim(),
@@ -176,16 +197,26 @@ function scheduleAutoSave(){
  },350);
 }
 function setBusy(on){
- ["calcSelected","optimize","maxLevel"].forEach(id=>$("#"+id).disabled=on);$("#stopBtn").disabled=!on;
+ ["calcSelected","optimize","maxLevel"].forEach(id=>$("#"+id).disabled=on);const verifyBtn=$("#verifyResult");if(verifyBtn)verifyBtn.disabled=on;$("#stopBtn").disabled=!on;
+ if(on){runStartedAt=performance.now();clearInterval(statusTimer);statusTimer=setInterval(updateStatusMeta,500)}
+ else{clearInterval(statusTimer);statusTimer=null;updateStatusMeta(true)}
 }
 function stopWorker(){if(worker){worker.terminate();worker=null}setBusy(false);setStatus("계산을 중지했습니다.",0)}
-function setStatus(text,pct){$("#statusText").textContent=text;$("#progressBar").style.width=(pct||0)+"%"}
-function run(mode){
+function updateStatusMeta(done=false){
+ const meta=$("#statusMeta");if(!meta)return;const elapsed=Math.max(0,(performance.now()-runStartedAt)/1000);
+ const pct=Number($("#progressBar")?.dataset.pct||0);let text=`경과 ${elapsed.toFixed(1)}초`;
+ if(!done&&pct>2&&pct<100){const remain=elapsed*(100-pct)/pct;if(Number.isFinite(remain))text+=` · 예상 ${Math.max(1,Math.round(remain))}초 남음`}
+ if(done&&pct>=100)text+=` · 완료`;meta.textContent=text;
+}
+function setStatus(text,pct){
+ const value=Math.max(0,Math.min(100,Number(pct)||0));$("#statusText").textContent=text;$("#progressBar").style.width=value+"%";$("#progressBar").dataset.pct=value;const p=$("#statusPct");if(p)p.textContent=Math.round(value)+"%";updateStatusMeta(value>=100)
+}
+function run(mode, overrideSelected=null){
  try{
-   const s=stats(), owned=runes(), selected=selectedRunes();
+   const s=stats(), owned=runes(), selected=Array.isArray(overrideSelected)?overrideSelected:selectedRunes();
    const missing=owned.filter(x=>!x.validData);
    if(missing.length)throw Error("효과 데이터가 없는 룬 레벨입니다: "+missing.map(x=>x.name+" Lv."+x.level).join(", "));
-   if(mode==="selected"||mode==="maxLevel"){if(selected.length!==5)throw Error("장착 룬을 정확히 5개 선택하세요.")}
+   if(mode==="selected"||mode==="maxLevel"||mode==="verify"){if(selected.length!==5)throw Error("장착 룬을 정확히 5개 선택하세요.")}
    if(mode==="optimize"&&owned.length<5)throw Error("보유 룬을 5개 이상 입력하세요.");
    localStorage.setItem("titanWeb:last",JSON.stringify(profile()));
    setBusy(true);$("#result").textContent="계산 중...";setStatus("웹 워커를 시작합니다.",2);
@@ -198,28 +229,105 @@ function run(mode){
    worker.postMessage({mode,stats:s,owned,selected,runeData:RUNE_DATA});
  }catch(err){alert(err.message)}
 }
+function currentResultRunes(){
+ if(!lastRenderedResult)return null;
+ const {payload:p,mode}=lastRenderedResult;
+ if(mode==="optimize")return p.recommended?.runes||null;
+ return p.runes||null;
+}
+function verifyCurrentResult(){
+ const combo=currentResultRunes();
+ if(!combo||combo.length!==5){alert("검증할 룬 조합 정보가 없습니다.");return}
+ run("verify",combo);
+}
+function resultSummaryText(){
+ if(!lastRenderedResult)return "";
+ const {payload:p,mode,stats:s}=lastRenderedResult;
+ let combo="",r=null,title="DinoLab 결과";
+ if(mode==="optimize"){title="DinoLab 추천 조합";combo=p.recommended.combo;r=p.recommended.result}
+ else if(mode==="maxLevel"){title=`DinoLab 최대 말뚝 Lv.${p.level}`;combo=p.combo;r=p.result}
+ else{title=mode==="verify"?"DinoLab 30,000회 검증":"DinoLab 선택 조합";combo=p.combo;r=p.result}
+ return `${title}\n${s.nickname||"프로필"} · 타이탄 Lv.${s.titanLevel}\n${combo}\n생존률 ${pct(r.survival)} · 95% 신뢰구간 ${pct(r.ciLow)} ~ ${pct(r.ciHigh)}\n50분 총딜 ${num(r.damage)}\nhttps://pochakucha.github.io/DinoLab/`;
+}
+async function shareResult(){
+ const text=resultSummaryText();if(!text){alert("먼저 계산을 실행하세요.");return}
+ try{if(navigator.share)await navigator.share({title:"DinoLab 타이탄 계산 결과",text});else{await navigator.clipboard.writeText(text);alert("공유용 결과를 복사했습니다.")}}catch(err){if(err?.name!=="AbortError")alert("공유하지 못했습니다: "+err.message)}
+}
+function interpretation(r,target){
+ const goal=target/100;
+ if(r.ciLow>=goal&&r.survival>=.98)return "생존 여유가 큰 안정형 조합입니다. 더 높은 타이탄이나 공격형 룬 교체를 시험해볼 수 있습니다.";
+ if(r.ciLow>=goal)return "목표 생존률의 95% 신뢰구간 하한까지 통과한 안정권 조합입니다.";
+ if(r.ciHigh>=goal)return "목표선 부근의 경계 조합입니다. 30,000회 재검증 후 사용하는 편이 안전합니다.";
+ return "현재 목표 생존률에 미달합니다. 방어 룬 강화 또는 타이탄 레벨 하향이 필요합니다.";
+}
 function render(p,mode,target){
  setStatus("계산 완료",100);
- if(mode==="selected"){
+ lastRenderedResult={payload:p,mode,target,stats:stats()};
+ if(mode==="selected"||mode==="verify"){
    const r=p.result, cls=r.wilson*100>=target?"goodtxt":"warntxt";
-   $("#result").innerHTML=`<div class="hero"><h2>선택한 5룬 정밀 결과</h2><div id="primaryRuneStrip" class="result-runes"></div><h3>${p.combo}</h3>
+   const verified=mode==="verify";
+   $("#result").innerHTML=`<div class="hero"><h2>${verified?"30,000회 재검증 결과":"선택한 5룬 정밀 결과"}</h2><div id="primaryRuneStrip" class="result-runes"></div><h3>${p.combo}</h3>
    <div class="cards"><div class="card"><span>생존률</span><b class="${cls}">${pct(r.survival)}</b></div><div class="card"><span>95% 신뢰구간</span><b class="${cls}">${pct(r.ciLow)} ~ ${pct(r.ciHigh)}</b></div><div class="card"><span>50분 총딜</span><b>${num(r.damage)}</b></div></div>
-   <p>시뮬레이션 ${num(r.sims)}회 · 평균 생존시간 ${(r.time/60).toFixed(1)}분 · 최종체력 ${num(r.hp)} · 일반공격 ${num(r.atk)} · 보스공격 ${num(r.bossAtk)}</p></div>`;
+   <p>시뮬레이션 ${num(r.sims)}회 · 평균 생존시간 ${(r.time/60).toFixed(1)}분 · 최종체력 ${num(r.hp)} · 일반공격 ${num(r.atk)} · 보스공격 ${num(r.bossAtk)}</p><div class="analysis-note"><b>결과 해석</b><span>${interpretation(r,target)}</span></div><div class="result-actions"><button class="btn good" id="verifyResult">30,000회 재검증</button></div></div>`;
  }else if(mode==="maxLevel"){
    $("#result").innerHTML=`<div class="hero"><h2>현재 5룬 최대 말뚝 레벨</h2><div id="primaryRuneStrip" class="result-runes"></div><h3>${p.combo}</h3>
-   <div class="cards"><div class="card"><span>추천 최대</span><b class="goodtxt">${p.level}레벨</b></div><div class="card"><span>생존률</span><b>${pct(p.result.survival)}</b></div><div class="card"><span>95% 신뢰구간</span><b>${pct(p.result.ciLow)} ~ ${pct(p.result.ciHigh)}</b></div></div><p>${(p.checks||[]).map(x=>x.level+"레벨 "+pct(x.result.survival)+" (하한 "+pct(x.result.ciLow)+")").join(" · ")}</p></div>`;
+   <div class="cards"><div class="card"><span>추천 최대</span><b class="goodtxt">${p.level}레벨</b></div><div class="card"><span>생존률</span><b>${pct(p.result.survival)}</b></div><div class="card"><span>95% 신뢰구간</span><b>${pct(p.result.ciLow)} ~ ${pct(p.result.ciHigh)}</b></div></div><p>${(p.checks||[]).map(x=>x.level+"레벨 "+pct(x.result.survival)+" (하한 "+pct(x.result.ciLow)+")").join(" · ")}</p><div class="analysis-note"><b>결과 해석</b><span>${interpretation(p.result,target)}</span></div><div class="result-actions"><button class="btn good" id="verifyResult">현재 레벨 30,000회 재검증</button></div></div>`;
  }else{
    const r=p.recommended.result,b=p.barrier?.result;
    let html=`<div class="hero"><h2>최종 추천 룬 조합</h2><div id="primaryRuneStrip" class="result-runes"></div><h3>${p.recommended.combo}</h3>
-   <div class="cards"><div class="card"><span>생존률</span><b class="goodtxt">${pct(r.survival)}</b></div><div class="card"><span>95% 신뢰구간</span><b class="goodtxt">${pct(r.ciLow)} ~ ${pct(r.ciHigh)}</b></div><div class="card"><span>50분 총딜</span><b>${num(r.damage)}</b></div></div><p>최종 검증 ${num(r.sims)}회</p>`;
+   <div class="cards"><div class="card"><span>생존률</span><b class="goodtxt">${pct(r.survival)}</b></div><div class="card"><span>95% 신뢰구간</span><b class="goodtxt">${pct(r.ciLow)} ~ ${pct(r.ciHigh)}</b></div><div class="card"><span>50분 총딜</span><b>${num(r.damage)}</b></div></div><p>최종 검증 ${num(r.sims)}회</p>
+   <div class="analysis-note"><b>결과 해석</b><span>${interpretation(r,target)}</span></div><div class="result-actions"><button class="btn warn" id="useRecommendedMax">이 룬 조합으로 최대 말뚝레벨 구하기</button><button class="btn good" id="verifyResult">추천 조합 30,000회 재검증</button></div>`;
    if(p.barrier)html+=`<h2>방어벽 포함 최고 조합</h2><h3>${p.barrier.combo}</h3><p>생존 ${pct(b.survival)} · 하한 ${pct(b.ciLow)} · 총딜 ${num(b.damage)} · 추천 대비 ${num(b.damage-r.damage)}</p>`;
-   html+=`</div>\n\n=== 정밀 검증 순위 ===\n`+p.ranking.map((x,i)=>`${String(i+1).padStart(2)}. ${x.result.wilson*100>=target?"[안정권]":"[목표미달]"} 생존 ${pct(x.result.survival)} (95% CI ${pct(x.result.ciLow)}~${pct(x.result.ciHigh)}, ${num(x.result.sims)}회) | 총딜 ${num(x.result.damage)} | ${x.combo}`).join("\n");
+   html+=`<h2>상위 조합 비교</h2><div class="ranking-wrap"><table class="ranking-table"><thead><tr><th>순위</th><th>판정</th><th>생존률</th><th>95% 하한</th><th>총딜</th><th>조합</th><th></th></tr></thead><tbody>${p.ranking.slice(0,10).map((x,i)=>`<tr><td>${i+1}</td><td>${x.result.wilson*100>=target?'<span class="stable-pill">안정권</span>':'<span class="fail-pill">미달</span>'}</td><td>${pct(x.result.survival)}</td><td>${pct(x.result.ciLow)}</td><td>${num(x.result.damage)}</td><td class="combo-cell">${x.combo}</td><td><button class="btn mini apply-ranked" data-combo="${encodeURIComponent(x.combo)}">적용</button></td></tr>`).join("")}</tbody></table></div>`;
+   html+=`</div>`;
    $("#result").innerHTML=html;
  }
  const comboForStrip=mode==="optimize"?p.recommended.combo:p.combo;
  renderRuneIconStrip(comboForStrip,"primaryRuneStrip");
+ const verifyButton=document.getElementById("verifyResult");if(verifyButton)verifyButton.onclick=verifyCurrentResult;
+ if(mode==="optimize"){
+  const b=document.getElementById("useRecommendedMax");if(b)b.onclick=()=>applyRecommendedAndRun(p.recommended.runes);
+  document.querySelectorAll(".apply-ranked").forEach(btn=>btn.onclick=()=>{const text=decodeURIComponent(btn.dataset.combo||"");applyComboText(text);});
+ }
  if(window.matchMedia("(max-width:760px)").matches){setTimeout(()=>$(".result-panel").scrollIntoView({behavior:"smooth",block:"start"}),80)}
 }
+
+function applyComboText(text){
+ const parts=String(text).split(" / ").map(x=>x.trim()).filter(Boolean);if(parts.length!==5){alert("조합 정보를 읽지 못했습니다.");return}
+ const selects=[...document.querySelectorAll(".manual-rune")];
+ parts.forEach((part,i)=>{const m=part.match(/^(.*?)(\d+)$/);if(selects[i]&&m)selects[i].value=m[1]});
+ localStorage.setItem("titanWeb:last",JSON.stringify(profile()));setStatus("상위 조합을 직접 조합에 적용했습니다.",100);
+ document.querySelector("#manualCombo")?.scrollIntoView({behavior:"smooth",block:"center"});
+}
+
+function applyRecommendedAndRun(combo){
+ if(!Array.isArray(combo)||combo.length!==5){alert("추천 조합 정보를 불러오지 못했습니다.");return}
+ const selects=[...document.querySelectorAll(".manual-rune")];
+ combo.forEach((r,i)=>{if(selects[i])selects[i].value=r.name});
+ localStorage.setItem("titanWeb:last",JSON.stringify(profile()));
+ setStatus("추천 조합을 직접 조합에 적용했습니다. 최대 말뚝 레벨을 계산합니다.",1);
+ setTimeout(()=>run("maxLevel"),50);
+}
+
+function saveResultImage(){
+ if(!lastRenderedResult){alert("먼저 계산을 실행하세요.");return}
+ const {payload:p,mode,stats:s}=lastRenderedResult;
+ let title="DinoLab 타이탄 계산 결과",combo="",lines=[];
+ if(mode==="optimize"){const r=p.recommended.result;title="DinoLab 최적 룬 조합";combo=p.recommended.combo;lines=[`타이탄 Lv.${s.titanLevel}`,`생존률 ${pct(r.survival)}`,`95% 신뢰구간 ${pct(r.ciLow)} ~ ${pct(r.ciHigh)}`,`50분 총딜 ${num(r.damage)}`]}
+ else if(mode==="maxLevel"){title="DinoLab 최대 말뚝 레벨";combo=p.combo;lines=[`최대 안정 타이탄 Lv.${p.level}`,`생존률 ${pct(p.result.survival)}`,`95% 신뢰구간 ${pct(p.result.ciLow)} ~ ${pct(p.result.ciHigh)}`]}
+ else{const r=p.result;title="DinoLab 선택 조합 결과";combo=p.combo;lines=[`타이탄 Lv.${s.titanLevel}`,`생존률 ${pct(r.survival)}`,`95% 신뢰구간 ${pct(r.ciLow)} ~ ${pct(r.ciHigh)}`,`50분 총딜 ${num(r.damage)}`]}
+ const canvas=document.createElement("canvas");canvas.width=1080;canvas.height=1080;const c=canvas.getContext("2d");
+ c.fillStyle="#07101e";c.fillRect(0,0,1080,1080);c.fillStyle="#15c8a4";c.fillRect(0,0,1080,18);
+ c.fillStyle="#ffffff";c.font="700 56px sans-serif";c.fillText(title,70,110);c.font="400 30px sans-serif";c.fillStyle="#a9b6c9";c.fillText(s.nickname||"프로필",70,160);
+ c.fillStyle="#101b2d";c.fillRect(60,210,960,620);c.fillStyle="#ffffff";c.font="700 38px sans-serif";wrapCanvasText(c,combo,90,285,900,52);
+ c.font="700 46px sans-serif";let y=470;for(const line of lines){c.fillText(line,90,y);y+=92}
+ c.font="400 25px sans-serif";c.fillStyle="#a9b6c9";c.fillText("pochakucha.github.io/DinoLab",70,1000);
+ const a=document.createElement("a");a.download=`DinoLab_${s.nickname||"result"}.png`;a.href=canvas.toDataURL("image/png");a.click();
+}
+function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight){
+ const parts=String(text).split(" / ");let line="";for(const part of parts){const test=line?line+" / "+part:part;if(ctx.measureText(test).width>maxWidth&&line){ctx.fillText(line,x,y);line=part;y+=lineHeight}else line=test}if(line)ctx.fillText(line,x,y)
+}
+
 const pct=x=>(x*100).toFixed(2)+"%";const num=x=>Math.round(x).toLocaleString("ko-KR");
 
 const WORKER_CODE = String.raw`
@@ -325,13 +433,18 @@ function pickCandidates(s,data,all){
 self.onmessage=e=>{
  try{
   const {mode,stats:s,owned,selected,runeData:data}=e.data;
+  if(mode==="verify"){
+   const total=30000,chunk=5000,parts=[];
+   for(let done=0;done<total;done+=chunk){parts.push(simulateBatch(s,data,selected,Math.min(chunk,total-done)));post("고정 30,000회 재검증 · "+Math.min(total,done+chunk).toLocaleString()+"회",8+88*Math.min(total,done+chunk)/total)}
+   const r=mergeResults(parts);self.postMessage({type:"done",payload:{combo:comboText(selected),runes:selected,result:r}});return;
+  }
   if(mode==="selected"){
-   post("1초 단위 이벤트 시뮬레이션",12);const r=adaptiveSimulate(s,data,selected,Math.max(500,Math.floor(s.simulations)),"선택 조합");self.postMessage({type:"done",payload:{combo:comboText(selected),result:r}});return;
+   post("1초 단위 이벤트 시뮬레이션",12);const r=adaptiveSimulate(s,data,selected,Math.max(500,Math.floor(s.simulations)),"선택 조합");self.postMessage({type:"done",payload:{combo:comboText(selected),runes:selected,result:r}});return;
   }
   if(mode==="maxLevel"){
    let lo=1,hi=201;while(lo+1<hi){const mid=Math.floor((lo+hi)/2);s.titanLevel=mid;post("최대 말뚝 탐색: "+mid+"레벨",10+35*(1-Math.log2(hi-lo)/8));const r=simulateBatch(s,data,selected,Math.max(800,Math.min(2500,Math.floor(s.simulations))));if(r.ciLow>=s.target/100)lo=mid;else hi=mid}
    const checks=[];for(const level of [Math.max(1,lo-1),lo,lo+1]){s.titanLevel=level;checks.push({level,result:adaptiveSimulate(s,data,selected,Math.max(1000,Math.floor(s.simulations)),level+"레벨 재검증")})}
-   const stable=checks.filter(x=>x.result.ciLow>=s.target/100),best=stable[stable.length-1]||checks[0];self.postMessage({type:"done",payload:{combo:comboText(selected),level:best.level,result:best.result,checks}});return;
+   const stable=checks.filter(x=>x.result.ciLow>=s.target/100),best=stable[stable.length-1]||checks[0];self.postMessage({type:"done",payload:{combo:comboText(selected),runes:selected,level:best.level,result:best.result,checks}});return;
   }
   post("모든 유효 5룬 조합 생성",5);const all=combos5(owned);post("전체 "+all.length.toLocaleString()+"개 조합 1차 평가",12);
   const candidates=pickCandidates(s,data,all);post("확장 후보 "+candidates.length+"개 고속 검증",25);
@@ -348,7 +461,7 @@ self.onmessage=e=>{
   const stable=precise.filter(x=>x.result.ciLow>=target),recommended=stable[0]||precise[0];
   const barrierStable=precise.filter(x=>x.combo.some(y=>y.name==="방어벽")&&x.result.ciLow>=target);
   const barrier=barrierStable.sort((a,b)=>b.result.damage-a.result.damage)[0]||precise.filter(x=>x.combo.some(y=>y.name==="방어벽")).sort((a,b)=>b.result.ciLow-a.result.ciLow)[0]||null;
-  self.postMessage({type:"done",payload:{recommended:{combo:comboText(recommended.combo),result:recommended.result},barrier:barrier?{combo:comboText(barrier.combo),result:barrier.result}:null,ranking:precise.slice(0,30).map(x=>({combo:comboText(x.combo),result:x.result})),total:all.length}});
+  self.postMessage({type:"done",payload:{recommended:{combo:comboText(recommended.combo),runes:recommended.combo,result:recommended.result},barrier:barrier?{combo:comboText(barrier.combo),runes:barrier.combo,result:barrier.result}:null,ranking:precise.slice(0,30).map(x=>({combo:comboText(x.combo),result:x.result})),total:all.length}});
  }catch(err){self.postMessage({type:"error",error:err.stack||err.message})}
 };`
 
@@ -365,6 +478,65 @@ function renderRuneIconStrip(comboTextValue,targetId){
 window.addEventListener('DOMContentLoaded',()=>{
  document.querySelectorAll('[data-scroll]').forEach(btn=>btn.addEventListener('click',()=>document.querySelector(btn.dataset.scroll)?.scrollIntoView({behavior:'smooth'})));
 });
+
+
+const QR_PREFIX="DINOLAB1:";
+function compactProfileDocument(){
+ const p=profile();
+ const statKeys=FIELD_DEFS.map(x=>x[0]);
+ return {v:1,n:String(p.stats.nickname||"프로필").trim(),s:statKeys.map(k=>p.stats[k]),r:p.runes.map(x=>[x.name,x.level])};
+}
+function encodeUtf8Base64(text){
+ const bytes=new TextEncoder().encode(text);let bin="";for(const b of bytes)bin+=String.fromCharCode(b);return btoa(bin).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/g,"");
+}
+function decodeUtf8Base64(text){
+ let b64=text.replace(/-/g,"+").replace(/_/g,"/");while(b64.length%4)b64+="=";const bin=atob(b64),bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));return new TextDecoder().decode(bytes);
+}
+function makeProfileCode(){return QR_PREFIX+encodeUtf8Base64(JSON.stringify(compactProfileDocument()))}
+function parseProfileCode(raw){
+ const text=String(raw||"").trim();if(!text.startsWith(QR_PREFIX))throw Error("DinoLab 프로필 코드가 아닙니다.");
+ const doc=JSON.parse(decodeUtf8Base64(text.slice(QR_PREFIX.length)));if(doc.v!==1||!Array.isArray(doc.s)||!Array.isArray(doc.r))throw Error("지원하지 않는 프로필 코드입니다.");
+ const statKeys=FIELD_DEFS.map(x=>x[0]),stats={};statKeys.forEach((k,i)=>stats[k]=doc.s[i]);if(doc.n)stats.nickname=doc.n;
+ return {stats,runes:doc.r.map(x=>({name:String(x[0]),level:Number(x[1]||0),owned:Number(x[1]||0)>0}))};
+}
+function openQrModal(mode){
+ try{
+  const modal=$("#qrModal"),create=$("#qrCreatePane"),scan=$("#qrScanPane");modal.hidden=false;modal.setAttribute("aria-hidden","false");
+  create.hidden=mode!=="create";scan.hidden=mode!=="scan";$("#qrTitle").textContent=mode==="create"?"프로필 QR 공유":"프로필 QR 가져오기";
+  if(mode==="create")renderProfileQr();else{$("#qrStatus").textContent="대기 중";$("#qrImportText").value=""}
+ }catch(err){alert("QR 준비 실패: "+err.message)}
+}
+function closeQrModal(){stopQrCamera();const modal=$("#qrModal");modal.hidden=true;modal.setAttribute("aria-hidden","true")}
+function renderProfileQr(){
+ const code=makeProfileCode(),box=$("#qrCanvas");box.innerHTML="";$("#qrCodeText").value=code;
+ if(typeof QRCode==="undefined")throw Error("QR 생성 라이브러리를 불러오지 못했습니다.");
+ new QRCode(box,{text:code,width:256,height:256,colorDark:"#000000",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.L});
+}
+function qrImageElement(){const box=$("#qrCanvas");return box.querySelector("canvas")||box.querySelector("img")}
+function downloadProfileQr(){
+ const el=qrImageElement();if(!el){alert("먼저 QR을 생성해주세요.");return}
+ let url;if(el.tagName==="CANVAS")url=el.toDataURL("image/png");else url=el.src;
+ const a=document.createElement("a");a.href=url;a.download=((stats().nickname||"DinoLab_프로필")+"_QR.png").replace(/[\\/:*?\"<>|]/g,"_");a.click();
+}
+async function copyProfileQrCode(){try{await navigator.clipboard.writeText(makeProfileCode());setProfileHint("프로필 코드 복사 완료");alert("프로필 코드를 복사했습니다.")}catch(e){$("#qrCodeText").focus();$("#qrCodeText").select();alert("자동 복사가 안 되어 코드를 선택했습니다.")}}
+function importProfileCode(raw){
+ try{const p=parseProfileCode(raw);applyProfile(p);localStorage.setItem("titanWeb:last",JSON.stringify(p));const name=(p.stats.nickname||"받은 프로필").trim();localStorage.setItem("titanWeb:profile:"+name,JSON.stringify(p));refreshProfiles(name);setProfileHint(name+" QR 프로필 불러오기 완료");stopQrCamera();closeQrModal();alert(name+" 프로필을 불러왔습니다.")}catch(err){$("#qrStatus").textContent="실패: "+err.message;alert("QR 불러오기 실패: "+err.message)}
+}
+async function startQrCamera(){
+ const status=$("#qrStatus");if(!window.BarcodeDetector){status.textContent="이 브라우저는 카메라 QR 판독을 지원하지 않습니다. QR 이미지 선택 또는 코드 붙여넣기를 이용하세요.";return}
+ try{
+  stopQrCamera();const supported=await BarcodeDetector.getSupportedFormats();if(!supported.includes("qr_code"))throw Error("QR 형식을 지원하지 않는 브라우저입니다.");
+  qrCameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});const video=$("#qrVideo");video.srcObject=qrCameraStream;await video.play();status.textContent="카메라에서 QR을 찾는 중…";
+  const detector=new BarcodeDetector({formats:["qr_code"]});const token=++qrScanLoop;
+  const loop=async()=>{if(token!==qrScanLoop||!qrCameraStream)return;try{const codes=await detector.detect(video);if(codes[0]?.rawValue){importProfileCode(codes[0].rawValue);return}}catch(e){}requestAnimationFrame(loop)};loop();
+ }catch(err){status.textContent="카메라 시작 실패: "+err.message}
+}
+function stopQrCamera(){qrScanLoop++;if(qrCameraStream){qrCameraStream.getTracks().forEach(t=>t.stop());qrCameraStream=null}const video=$("#qrVideo");if(video)video.srcObject=null}
+async function scanQrImageFile(e){
+ const file=e.target.files?.[0];if(!file)return;const status=$("#qrStatus");
+ try{if(!window.BarcodeDetector)throw Error("이 브라우저는 이미지 QR 판독을 지원하지 않습니다. 프로필 코드를 직접 붙여넣어 주세요.");const bitmap=await createImageBitmap(file);const detector=new BarcodeDetector({formats:["qr_code"]});const codes=await detector.detect(bitmap);bitmap.close?.();if(!codes.length)throw Error("이미지에서 QR을 찾지 못했습니다.");importProfileCode(codes[0].rawValue)}catch(err){status.textContent="이미지 판독 실패: "+err.message;alert(status.textContent)}finally{e.target.value=""}
+}
+window.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#qrModal")?.hidden)closeQrModal()});
 
 init();
 
@@ -390,3 +562,35 @@ init();
   grades.forEach(g=>{const b=document.createElement('button');b.textContent=g;b.className=g===active?'active':'';b.addEventListener('click',()=>{active=g;[...filters.children].forEach(x=>x.classList.toggle('active',x===b));render()});filters.appendChild(b)});
   render();
 })();
+
+function showPwaToast(message, actionText="확인", action=()=>hidePwaToast()){
+ const toast=$("#pwaToast"),text=$("#pwaToastText"),btn=$("#pwaToastAction");if(!toast||!text||!btn)return;
+ text.textContent=message;btn.textContent=actionText;btn.onclick=action;toast.hidden=false;
+}
+function hidePwaToast(){const toast=$("#pwaToast");if(toast)toast.hidden=true;}
+async function installPwa(){
+ if(!deferredInstallPrompt){showPwaToast("브라우저 메뉴에서 ‘홈 화면에 추가’를 선택해주세요.");return;}
+ deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;
+ const btn=$("#installApp");if(btn)btn.hidden=true;
+}
+window.addEventListener("beforeinstallprompt",event=>{
+ event.preventDefault();deferredInstallPrompt=event;
+ const btn=$("#installApp");if(btn)btn.hidden=false;
+ showPwaToast("DinoLab을 홈 화면에 설치하면 앱처럼 빠르게 실행할 수 있어요.","설치",installPwa);
+});
+window.addEventListener("appinstalled",()=>{deferredInstallPrompt=null;const btn=$("#installApp");if(btn)btn.hidden=true;showPwaToast("DinoLab 설치가 완료되었습니다.");});
+if("serviceWorker" in navigator){
+ window.addEventListener("load",async()=>{
+  try{
+   const reg=await navigator.serviceWorker.register("sw.js");
+   if(reg.waiting)showPwaToast("새 버전이 준비되었습니다.","업데이트",()=>{reg.waiting.postMessage("SKIP_WAITING");location.reload();});
+   reg.addEventListener("updatefound",()=>{
+    const installing=reg.installing;if(!installing)return;
+    installing.addEventListener("statechange",()=>{
+     if(installing.state==="installed"&&navigator.serviceWorker.controller){showPwaToast("DinoLab 새 버전이 준비되었습니다.","업데이트",()=>{installing.postMessage("SKIP_WAITING");});}
+    });
+   });
+   navigator.serviceWorker.addEventListener("controllerchange",()=>location.reload());
+  }catch(e){console.warn("서비스 워커 등록 실패",e)}
+ });
+}

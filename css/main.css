@@ -424,3 +424,26 @@ button,input,select{touch-action:manipulation}
   .cards{grid-template-columns:1fr!important}
   .hero-box h1{font-size:22px}
 }
+
+/* v0.11 result flow and blank rune level input */
+.rune-row .rune-level input::placeholder{color:#6f7f96;opacity:.9}
+.result-actions{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+.result-actions .btn{min-height:44px}
+@media(max-width:760px){.result-actions{display:grid;grid-template-columns:1fr}.result-actions .btn{width:100%;min-height:50px}}
+
+/* PWA v0.12 */
+.pwa-toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9999;width:min(92vw,520px);display:flex;align-items:center;gap:12px;padding:12px 14px;background:#111f35;border:1px solid #22d3ee;border-radius:14px;box-shadow:0 18px 45px rgba(0,0,0,.4)}
+.pwa-toast[hidden]{display:none}.pwa-toast span{flex:1;font-size:14px;line-height:1.45}.pwa-toast .btn{white-space:nowrap}
+@media (display-mode:standalone){.site-header{padding-top:env(safe-area-inset-top)}.hero-banner{margin-top:0}}
+@media(max-width:640px){#installApp{order:-1}.pwa-toast{align-items:stretch;flex-direction:column}.pwa-toast .btn{width:100%}}
+
+/* DinoLab v0.13 — progress and ranking comparison */
+.status-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.status-head b{color:#7dd3fc}.status-meta{margin-top:4px;color:#64748b;font-size:12px}.ranking-wrap{overflow-x:auto;margin-top:10px;border:1px solid #334155;border-radius:12px}.ranking-table{width:100%;border-collapse:collapse;min-width:860px;background:#0b1220}.ranking-table th,.ranking-table td{padding:10px 9px;border-bottom:1px solid #243247;text-align:right;font-size:12px;white-space:nowrap}.ranking-table th{position:sticky;top:0;background:#111c2d;color:#94a3b8}.ranking-table th:nth-child(6),.ranking-table td:nth-child(6){text-align:left}.combo-cell{max-width:370px;overflow:hidden;text-overflow:ellipsis}.stable-pill,.fail-pill{display:inline-block;padding:3px 7px;border-radius:999px;font-weight:900}.stable-pill{background:#064e3b;color:#6ee7b7}.fail-pill{background:#4c1d1d;color:#fca5a5}.btn.mini{padding:6px 9px;font-size:11px}@media(max-width:760px){.status-head{align-items:flex-start}.ranking-wrap{margin-left:-4px;margin-right:-4px}}
+
+/* DinoLab v0.14 — verification and interpretation */
+.analysis-note{display:flex;gap:10px;align-items:flex-start;margin:14px 0;padding:12px 14px;border:1px solid #334155;border-radius:10px;background:#0b1220}.analysis-note b{flex:0 0 auto;color:#7dd3fc}.analysis-note span{color:#dbeafe;line-height:1.5}.result-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}@media(max-width:620px){.analysis-note{display:block}.analysis-note b{display:block;margin-bottom:5px}.result-actions .btn{width:100%}}
+
+/* v0.15 profile QR */
+.qr-btn{border-color:#155e75;background:#082f49;color:#cffafe}
+.modal[hidden]{display:none}.modal{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;padding:16px}.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.76);backdrop-filter:blur(3px)}.modal-card{position:relative;width:min(560px,100%);max-height:92vh;overflow:auto;border:1px solid var(--line);border-radius:18px;background:var(--panel);box-shadow:0 24px 70px rgba(0,0,0,.55);padding:18px}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}.modal-head h2{margin:0}.icon-btn{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:#111827;color:#fff;font-size:18px}.qr-canvas{display:grid;place-items:center;min-height:270px;margin:14px auto;padding:16px;background:#fff;border-radius:16px;width:min(320px,100%);overflow:auto}.qr-canvas img,.qr-canvas canvas{max-width:100%;height:auto}.qr-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}.advanced-box{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:10px;background:rgba(0,0,0,.12)}.advanced-box summary{cursor:pointer;font-weight:700}.advanced-box textarea{box-sizing:border-box;width:100%;min-height:92px;margin:10px 0 8px;padding:10px;border:1px solid var(--line);border-radius:10px;background:#07101e;color:#dbeafe;resize:vertical;word-break:break-all}#qrVideo{display:block;width:100%;max-height:380px;min-height:180px;object-fit:cover;background:#020617;border:1px solid var(--line);border-radius:14px;margin:12px 0}
+@media(max-width:520px){.modal{padding:8px}.modal-card{padding:14px;border-radius:14px}.qr-actions .btn{width:100%}}
