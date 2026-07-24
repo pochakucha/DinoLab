@@ -94,21 +94,9 @@ function bind(){
      scrollToCalculatorTarget(btn.dataset.scroll,btn.id==="heroStart");
    });
  });
- const heroStart=$("#heroStart");
- if(heroStart){
-   heroStart.addEventListener("click",()=>{
-     const panel=document.querySelector("#calculator .panel");
-     panel?.classList.remove("attention-flash");
-     void panel?.offsetWidth;
-     panel?.classList.add("attention-flash");
-     showPwaToast("아래에서 스펙과 보유 룬을 입력한 뒤 계산 버튼을 눌러주세요.");
-     setTimeout(()=>document.querySelector("#nickname")?.focus({preventScroll:true}),120);
-   });
- }
  $("#calcSelected").onclick=()=>run("selected");
  $("#optimize").onclick=()=>run("optimize");
  $("#maxLevel").onclick=()=>run("maxLevel");
- $("#stopBtn").onclick=stopWorker;
  $("#saveProfile").onclick=saveProfile;
  $("#loadProfile").onclick=()=>{const n=$("#profileSelect").value;if(n){applyProfile(JSON.parse(localStorage.getItem("titanWeb:profile:"+n)));}};
  $("#deleteProfile").onclick=deleteProfile;
@@ -198,11 +186,10 @@ function scheduleAutoSave(){
  },350);
 }
 function setBusy(on){
- ["calcSelected","optimize","maxLevel"].forEach(id=>$("#"+id).disabled=on);const verifyBtn=$("#verifyResult");if(verifyBtn)verifyBtn.disabled=on;$("#stopBtn").disabled=!on;
+ ["calcSelected","optimize","maxLevel"].forEach(id=>$("#"+id).disabled=on);const verifyBtn=$("#verifyResult");if(verifyBtn)verifyBtn.disabled=on;
  if(on){runStartedAt=performance.now();clearInterval(statusTimer);statusTimer=setInterval(updateStatusMeta,500)}
  else{clearInterval(statusTimer);statusTimer=null;updateStatusMeta(true)}
 }
-function stopWorker(){if(worker){worker.terminate();worker=null}setBusy(false);setStatus("계산을 중지했습니다.",0)}
 function updateStatusMeta(done=false){
  const meta=$("#statusMeta");if(!meta)return;const elapsed=Math.max(0,(performance.now()-runStartedAt)/1000);
  const pct=Number($("#progressBar")?.dataset.pct||0);let text=`경과 ${elapsed.toFixed(1)}초`;
