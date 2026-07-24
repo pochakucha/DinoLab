@@ -538,8 +538,23 @@ function importProfileCode(raw){
  }catch(err){alert("프로필 코드 붙여넣기 실패: "+err.message)}
 }
 
+
+function placeCalcActionsForViewport(){
+ const actions=document.querySelector(".hero-calc-actions");
+ const mobileSlot=document.getElementById("mobileCalcActionsSlot");
+ const heroBox=document.querySelector(".hero-box");
+ if(!actions||!mobileSlot||!heroBox)return;
+ if(window.matchMedia("(max-width: 760px)").matches){
+  if(actions.parentElement!==mobileSlot)mobileSlot.appendChild(actions);
+ }else if(actions.parentElement!==heroBox){
+  heroBox.appendChild(actions);
+ }
+}
+window.addEventListener("resize",placeCalcActionsForViewport);
+
 window.addEventListener("hashchange",()=>{if(location.hash==="#calculator")scrollToCalculatorTarget("#calculator",false)});
 init();
+placeCalcActionsForViewport();
 
 // DinoLab v0.1 rune encyclopedia
 (function initEncyclopedia(){

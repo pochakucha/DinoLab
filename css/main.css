@@ -547,3 +547,13 @@ button,input,select{touch-action:manipulation}
   .ranking-table td:nth-child(7) .btn{width:100%;min-height:42px}
   .combo-cell{max-width:none;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.45}
 }
+
+/* v0.29.3: 모바일에서는 입력 완료 후 바로 계산할 수 있도록 버튼을 프로필 아래로 이동 */
+.mobile-calc-actions-slot{display:none}
+@media(max-width:760px){
+  .mobile-calc-actions-slot{display:block;margin-top:16px}
+  .mobile-calc-actions-slot:empty{display:none}
+  .mobile-calc-actions-slot .hero-calc-actions{display:grid;width:100%;min-width:0;margin:0;gap:10px}
+  .mobile-calc-actions-slot .hero-calc-actions .btn{width:100%;min-height:52px}
+  .hero-box>.hero-calc-actions{display:none}
+}
