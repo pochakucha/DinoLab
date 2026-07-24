@@ -86,13 +86,15 @@ function init(){
 }
 function bind(){
  document.querySelectorAll("[data-scroll]").forEach(btn=>{
-   btn.onclick=()=>{
-     const target=document.querySelector(btn.dataset.scroll);
-     if(!target)return;
-     target.scrollIntoView({behavior:"smooth",block:"start"});
-     if(btn.id==="heroStart")setTimeout(()=>document.querySelector("#baseHp")?.focus({preventScroll:true}),450);
-   };
+   btn.addEventListener("click",event=>{
+     event.preventDefault();
+     scrollToCalculatorTarget(btn.dataset.scroll,btn.id==="heroStart");
+   });
  });
+ const heroStart=$("#heroStart");
+ if(heroStart){
+   heroStart.addEventListener("click",()=>setTimeout(()=>document.querySelector("#baseHp")?.focus({preventScroll:true}),450));
+ }
  $("#calcSelected").onclick=()=>run("selected");
  $("#optimize").onclick=()=>run("optimize");
  $("#maxLevel").onclick=()=>run("maxLevel");
@@ -111,7 +113,6 @@ function bind(){
  $("#copyQrCode").onclick=copyProfileQrCode;
  $("#startQrCamera").onclick=startQrCamera;
  $("#stopQrCamera").onclick=stopQrCamera;
- $("#pickQrImage").onclick=()=>$("#qrImageInput").click();
  $("#qrImageInput").onchange=scanQrImageFile;
  $("#importQrText").onclick=()=>importProfileCode($("#qrImportText").value);
  $("#copyResult").onclick=()=>navigator.clipboard.writeText($("#result").innerText).then(()=>alert("결과를 복사했습니다."));
@@ -120,6 +121,15 @@ function bind(){
  $("#resetForm").onclick=()=>{if(confirm("입력값과 룬 선택을 초기화할까요?")){localStorage.removeItem("titanWeb:last");location.reload();}};
  const installBtn=$("#installApp");if(installBtn)installBtn.onclick=installPwa;
 }
+
+function scrollToCalculatorTarget(selector,focusFirst=false){
+ const target=document.querySelector(selector||"#calculator");
+ if(!target)return;
+ const top=target.getBoundingClientRect().top+window.scrollY-72;
+ window.scrollTo({top:Math.max(0,top),behavior:"smooth"});
+ if(focusFirst)setTimeout(()=>document.querySelector("#baseHp")?.focus({preventScroll:true}),450);
+}
+
 function stats(){
  const s={};FIELD_DEFS.forEach(([k,,type])=>s[k]=type==="number"?Number($("#"+k).value):$("#"+k).value);
  if(s.baseHp/10+s.baseAtk<=0)throw Error("기본체력/10 + 기본공격력은 0보다 커야 합니다.");
@@ -538,10 +548,12 @@ async function startQrCamera(){
 function stopQrCamera(){qrScanLoop++;if(qrCameraStream){qrCameraStream.getTracks().forEach(t=>t.stop());qrCameraStream=null}const video=$("#qrVideo");if(video)video.srcObject=null}
 async function scanQrImageFile(e){
  const file=e.target.files?.[0];if(!file)return;const status=$("#qrStatus");
+ status.textContent="선택한 QR 이미지를 읽는 중…";
  try{if(!window.BarcodeDetector)throw Error("이 브라우저는 이미지 QR 판독을 지원하지 않습니다. 프로필 코드를 직접 붙여넣어 주세요.");const bitmap=await createImageBitmap(file);const detector=new BarcodeDetector({formats:["qr_code"]});const codes=await detector.detect(bitmap);bitmap.close?.();if(!codes.length)throw Error("이미지에서 QR을 찾지 못했습니다.");importProfileCode(codes[0].rawValue)}catch(err){status.textContent="이미지 판독 실패: "+err.message;alert(status.textContent)}finally{e.target.value=""}
 }
 window.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#qrModal")?.hidden)closeQrModal()});
 
+window.addEventListener("hashchange",()=>{if(location.hash==="#calculator")scrollToCalculatorTarget("#calculator",false)});
 init();
 
 // DinoLab v0.1 rune encyclopedia
