@@ -127,7 +127,7 @@ function bind(){
  $("#stopQrCamera").onclick=stopQrCamera;
  $("#qrImageInput").onchange=scanQrImageFile;
  $("#importQrText").onclick=()=>importProfileCode($("#qrImportText").value);
- $("#copyResult").onclick=()=>navigator.clipboard.writeText($("#result").innerText).then(()=>alert("결과를 복사했습니다."));
+ $("#copyResult").onclick=()=>{let t=$("#result").innerText;const i=t.indexOf("상위 조합 비교");if(i!==-1)t=t.slice(0,i).trim();navigator.clipboard.writeText(t).then(()=>alert("결과를 복사했습니다."));};
  $("#saveResultImage").onclick=saveResultImage;
  $("#shareResult").onclick=shareResult;
  $("#resetForm").onclick=()=>{if(confirm("입력값과 룬 선택을 초기화할까요?")){localStorage.removeItem("titanWeb:last");location.reload();}};
