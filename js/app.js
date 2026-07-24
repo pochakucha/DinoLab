@@ -509,8 +509,8 @@ function importProfileCode(raw){
  try{
   const p=parseProfileCode(raw);applyProfile(p);localStorage.setItem("titanWeb:last",JSON.stringify(p));
   const name=(p.stats.nickname||"받은 프로필").trim();localStorage.setItem("titanWeb:profile:"+name,JSON.stringify(p));refreshProfiles(name);
-  setProfileHint(name+" 프로필 코드 불러오기 완료");alert(name+" 프로필을 불러왔습니다.");
- }catch(err){alert("프로필 코드 불러오기 실패: "+err.message)}
+  setProfileHint(name+" 프로필 코드 붙여넣기 완료");alert(name+" 프로필을 불러왔습니다.");
+ }catch(err){alert("프로필 코드 붙여넣기 실패: "+err.message)}
 }
 
 window.addEventListener("hashchange",()=>{if(location.hash==="#calculator")scrollToCalculatorTarget("#calculator",false)});
