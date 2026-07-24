@@ -450,3 +450,7 @@ button,input,select{touch-action:manipulation}
 
 /* v0.17 interaction fixes */
 .hero-action{position:relative;z-index:3}.qr-image-label{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation}
+
+/* v0.18: 시작 안내 피드백 */
+@keyframes attentionFlash{0%,100%{box-shadow:var(--panel-shadow,0 0 0 transparent)}35%{box-shadow:0 0 0 2px rgba(53,208,255,.75),0 0 28px rgba(53,208,255,.22)}}
+.attention-flash{animation:attentionFlash .9s ease-out}

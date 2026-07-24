@@ -1,20 +1,20 @@
 const EXCLUSIVE = [["압축","매머드"]];
 const DURATION = 3000;
 const FIELD_DEFS = [
- ["nickname","닉네임","text","포차쿠차쓰리"],
+ ["nickname","닉네임","text",""],
  ["levelCap","레벨캡","number",1400],
- ["baseHp","기본체력","number",5210],
- ["baseAtk","기본공격력","number",729],
- ["moveSpeed","기본이동속도","number",150],
- ["constHp","별자리체력","number",1000],
- ["constAtk","별자리공격력","number",135],
- ["constMove","별자리이동속도","number",0],
- ["titanBonus","타이탄피해증가(고정)","number",40],
- ["titanReduction","타이탄피해감소(고정)","number",10],
- ["extraAtk","공격력증가%","number",3.7],
- ["extraHp","체력증가%","number",0.7],
- ["extraBoth","공체증가%","number",3],
- ["titanLevel","타이탄레벨","number",26],
+ ["baseHp","기본체력","number",""],
+ ["baseAtk","기본공격력","number",""],
+ ["moveSpeed","기본이동속도","number",""],
+ ["constHp","별자리체력","number",""],
+ ["constAtk","별자리공격력","number",""],
+ ["constMove","별자리이동속도","number",""],
+ ["titanBonus","타이탄피해증가(고정)","number",""],
+ ["titanReduction","타이탄피해감소(고정)","number",""],
+ ["extraAtk","공격력증가%","number",""],
+ ["extraHp","체력증가%","number",""],
+ ["extraBoth","공체증가%","number",""],
+ ["titanLevel","타이탄레벨","number",""],
  ["simulations","기본 시뮬횟수","number",3000],
  ["target","목표생존률%","number",90]
 ];
@@ -93,7 +93,14 @@ function bind(){
  });
  const heroStart=$("#heroStart");
  if(heroStart){
-   heroStart.addEventListener("click",()=>setTimeout(()=>document.querySelector("#baseHp")?.focus({preventScroll:true}),450));
+   heroStart.addEventListener("click",()=>{
+     const panel=document.querySelector("#calculator .panel");
+     panel?.classList.remove("attention-flash");
+     void panel?.offsetWidth;
+     panel?.classList.add("attention-flash");
+     showPwaToast("아래에서 스펙과 보유 룬을 입력한 뒤 계산 버튼을 눌러주세요.");
+     setTimeout(()=>document.querySelector("#nickname")?.focus({preventScroll:true}),120);
+   });
  }
  $("#calcSelected").onclick=()=>run("selected");
  $("#optimize").onclick=()=>run("optimize");
@@ -126,8 +133,8 @@ function scrollToCalculatorTarget(selector,focusFirst=false){
  const target=document.querySelector(selector||"#calculator");
  if(!target)return;
  const top=target.getBoundingClientRect().top+window.scrollY-72;
- window.scrollTo({top:Math.max(0,top),behavior:"smooth"});
- if(focusFirst)setTimeout(()=>document.querySelector("#baseHp")?.focus({preventScroll:true}),450);
+ window.scrollTo({top:Math.max(0,top),behavior:focusFirst?"auto":"smooth"});
+ if(focusFirst)setTimeout(()=>document.querySelector("#nickname")?.focus({preventScroll:true}),120);
 }
 
 function stats(){
