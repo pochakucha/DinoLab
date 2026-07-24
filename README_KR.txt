@@ -1,4 +1,4 @@
-DinoLab v0.18
+DinoLab v0.19
 
 1. 이 폴더 안의 파일과 폴더를 모두 GitHub 저장소 최상위에 업로드하세요.
 2. index.html이 저장소 최상위에 있어야 합니다.

@@ -27,6 +27,7 @@ let runStartedAt=0;
 let statusTimer=null;
 let qrCameraStream=null;
 let qrScanLoop=0;
+const APP_VERSION="0.19";
 
 function displayGrade(raw){return ({"에픽/노랑":"에픽","초록":"레어","파랑":"일반"}[raw]||raw)}
 function availableMaxLevel(d){
@@ -80,8 +81,12 @@ function init(){
  refreshManualCombo();
  bind();
  refreshProfiles();
- const saved=localStorage.getItem("titanWeb:last");
- if(saved){try{applyProfile(JSON.parse(saved));}catch(e){console.warn("자동 복원 실패",e)}}
+ // v0.19: 공개용 기본 화면에는 이전 자동저장 스펙을 불러오지 않습니다.
+ // 이름을 붙여 저장한 프로필은 유지되며, 사용자가 직접 불러올 수 있습니다.
+ if(localStorage.getItem("titanWeb:startupVersion")!==APP_VERSION){
+   localStorage.removeItem("titanWeb:last");
+   localStorage.setItem("titanWeb:startupVersion",APP_VERSION);
+ }
  enableAutoSave();
 }
 function bind(){
@@ -184,7 +189,7 @@ function makeProfileDocument(){
  const p=profile();
  return {
   profileVersion:3,
-  appVersion:"0.15",
+  appVersion:APP_VERSION,
   gameVersion:"2026.07.23",
   savedAt:new Date().toISOString(),
   profileName:(p.stats.nickname||"프로필").trim(),
