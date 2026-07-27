@@ -1,4 +1,4 @@
-const CACHE = "dinolab-v0.29.5";
+const CACHE = "dinolab-v0.30.0";
 const CORE = [
   "./",
   "./index.html",

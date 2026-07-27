@@ -557,3 +557,16 @@ button,input,select{touch-action:manipulation}
   .mobile-calc-actions-slot .hero-calc-actions .btn{width:100%;min-height:52px}
   .hero-box>.hero-calc-actions{display:none}
 }
+
+/* DinoLab v0.30 — developer diagnostics */
+.developer-toggle{display:flex;align-items:flex-start;gap:10px;margin:14px 0 4px;padding:12px 13px;border:1px solid #3b526b;border-radius:12px;background:#0b1422;cursor:pointer}
+.developer-toggle input{width:19px;height:19px;margin-top:2px;flex:0 0 auto}
+.developer-toggle span{display:grid;gap:3px}.developer-toggle b{font-size:14px;color:#e2e8f0}.developer-toggle small{font-size:11px;line-height:1.45;color:#94a3b8}
+.debug-panel{margin-top:16px;border:1px solid #475569;border-radius:12px;background:#07101e;overflow:hidden;text-align:left}
+.debug-panel summary{padding:12px 14px;font-weight:900;cursor:pointer;background:#111c2e;color:#bae6fd}
+.debug-panel table{width:100%;border-collapse:collapse;font-size:12px}
+.debug-panel th,.debug-panel td{padding:8px 12px;border-top:1px solid #243247;text-align:left;vertical-align:top}
+.debug-panel th{width:52%;color:#94a3b8;font-weight:700}.debug-panel td{color:#e2e8f0;font-variant-numeric:tabular-nums}
+.debug-warning{margin:10px 12px 0;padding:9px 10px;border:1px solid #f59e0b;border-radius:8px;background:#78350f55;color:#fde68a;font-size:12px;line-height:1.5}
+.debug-foot{margin:0!important;padding:10px 12px!important;border-top:1px solid #243247;color:#64748b!important;font-size:11px!important;line-height:1.5}
+@media(max-width:520px){.debug-panel th,.debug-panel td{padding:7px 9px}.debug-panel th{width:56%}}

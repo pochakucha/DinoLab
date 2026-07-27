@@ -25,7 +25,7 @@ let lastRenderedResult=null;
 let deferredInstallPrompt=null;
 let runStartedAt=0;
 let statusTimer=null;
-const APP_VERSION="0.29.5";
+const APP_VERSION="0.30.0";
 
 function displayGrade(raw){return ({"에픽/노랑":"에픽","초록":"레어","파랑":"일반"}[raw]||raw)}
 function availableMaxLevel(d){
@@ -227,6 +227,7 @@ function setStatus(text,pct){
 function run(mode, overrideSelected=null){
  try{
    const s=stats(), owned=runes(), selected=Array.isArray(overrideSelected)?overrideSelected:selectedRunes();
+   s.debugMode=!!$("#developerMode")?.checked;
    const missing=owned.filter(x=>!x.validData);
    if(missing.length)throw Error("효과 데이터가 없는 룬 레벨입니다: "+missing.map(x=>x.name+" Lv."+x.level).join(", "));
    if(mode==="selected"||mode==="maxLevel"||mode==="verify"){if(selected.length!==5)throw Error("장착 룬을 정확히 5개 선택하세요.")}
@@ -277,6 +278,41 @@ function interpretation(r,target){
  if(r.ciHigh>=goal)return "목표선 부근의 경계 조합입니다. 30,000회 재검증 후 사용하는 편이 안전합니다.";
  return "현재 목표 생존률에 미달합니다. 방어 룬 강화 또는 타이탄 레벨 하향이 필요합니다.";
 }
+function debugNum(x,digits=2){
+ const n=Number(x);return Number.isFinite(n)?n.toLocaleString("ko-KR",{maximumFractionDigits:digits}):"-";
+}
+function debugPanel(r){
+ if(!r?.debug)return "";
+ const d=r.debug, st=d.stats||{}, ev=d.events||{}, totals=d.totals||{}, skills=d.skills||{};
+ const rows=[
+  ["레벨캡 원계수",debugNum(st.rawLevelCapFactor,5)],
+  ["실제 적용 계수",debugNum(st.levelCapFactor,5)+(st.levelCapFactor>=1?" · 상향 없음":" · 하향 보정")],
+  ["보정 후 기본 체력",debugNum(st.cappedBaseHp)],
+  ["보정 후 기본 공격력",debugNum(st.cappedBaseAtk)],
+  ["별자리 포함 깡체력",debugNum(st.flatHp)],
+  ["별자리 포함 깡공격력",debugNum(st.flatAtk)],
+  ["최종 체력",debugNum(r.hp)],
+  ["최종 일반공격",debugNum(r.atk)],
+  ["타이탄 1회 기본 피해",debugNum(d.titan.rawDamage)],
+  ["고정 감소 후 피해",debugNum(d.titan.incomingDamage)],
+  ["공룡 공격 판정/회",debugNum(ev.dinoAttackChecks/r.sims)],
+  ["타이탄 피격 판정/회",debugNum(ev.titanHitChecks/r.sims)],
+  ["흡혈 판정/발동",`${debugNum(ev.lifestealChecks/r.sims)} / ${debugNum(ev.lifestealProcs/r.sims)}`],
+  ["힐 판정/발동",`${debugNum(ev.healChecks/r.sims)} / ${debugNum(ev.healProcs/r.sims)}`],
+  ["힐 1회 회복량",debugNum(d.heal.amount)],
+  ["평균 실제 힐 회복량",debugNum(totals.healActual/r.sims)],
+  ["평균 실제 흡혈 회복량",debugNum(totals.lifestealActual/r.sims)],
+  ["평균 받은 피해",debugNum(totals.damageTaken/r.sims)],
+  ["평균 피해저항 감소량",debugNum(totals.damagePrevented/r.sims)]
+ ];
+ const skillRows=Object.entries(skills).map(([name,x])=>`<tr><th>${name} 판정/발동</th><td>${debugNum(x.checks/r.sims)} / ${debugNum(x.procs/r.sims)}</td></tr>`).join("");
+ const warnings=[];
+ const expectedTitan=Math.floor(d.duration/3);
+ if(d.heal.chance>0&&Math.abs(ev.healChecks-ev.nonLethalTitanHits)>0)warnings.push("힐 판정 횟수가 비치명 타이탄 피격 횟수와 다릅니다.");
+ if(r.survival>.99&&d.heal.chance>0&&Math.abs(ev.healChecks/r.sims-expectedTitan)>1)warnings.push("생존 조합인데 힐 판정 횟수가 예상 타이탄 공격 횟수와 다릅니다.");
+ return `<details class="debug-panel" open><summary>🛠 개발자 모드 상세 로그</summary>${warnings.length?`<div class="debug-warning">${warnings.join(" ")}</div>`:""}<table><tbody>${rows.map(([a,b])=>`<tr><th>${a}</th><td>${b}</td></tr>`).join("")}${skillRows}</tbody></table><p class="debug-foot">모든 횟수는 시뮬레이션 1회당 평균입니다. 사망한 전투는 사망 이후 판정이 없으므로 50분 최대치보다 작을 수 있습니다.</p></details>`;
+}
+
 function render(p,mode,target){
  setStatus("계산 완료",100);
  const currentStats=stats(), durationText=formatDuration(currentStats.durationMinutes);
@@ -286,15 +322,15 @@ function render(p,mode,target){
    const verified=mode==="verify";
    $("#result").innerHTML=`<div class="hero"><h2>${verified?"30,000회 재검증 결과":"선택한 5룬 정밀 결과"}</h2><div id="primaryRuneStrip" class="result-runes"></div><h3>${p.combo}</h3>
    <div class="cards"><div class="card"><span>생존률</span><b class="${cls}">${pct(r.survival)}</b></div><div class="card"><span>95% 신뢰구간</span><b class="${cls}">${pct(r.ciLow)} ~ ${pct(r.ciHigh)}</b></div><div class="card"><span>${durationText} 총딜</span><b>${num(r.damage)}</b></div></div>
-   <p>시뮬레이션 ${num(r.sims)}회 · 평균 생존시간 ${(r.time/60).toFixed(1)}분 · 최종체력 ${num(r.hp)} · 일반공격 ${num(r.atk)} · 보스공격 ${num(r.bossAtk)}</p><div class="analysis-note"><b>결과 해석</b><span>${interpretation(r,target)}</span></div><div class="result-actions"><button class="btn good" id="verifyResult">30,000회 재검증</button></div></div>`;
+   <p>시뮬레이션 ${num(r.sims)}회 · 평균 생존시간 ${(r.time/60).toFixed(1)}분 · 최종체력 ${num(r.hp)} · 일반공격 ${num(r.atk)} · 보스공격 ${num(r.bossAtk)}</p><div class="analysis-note"><b>결과 해석</b><span>${interpretation(r,target)}</span></div><div class="result-actions"><button class="btn good" id="verifyResult">30,000회 재검증</button></div>${debugPanel(r)}</div>`;
  }else if(mode==="maxLevel"){
    $("#result").innerHTML=`<div class="hero"><h2>현재 5룬 최대 말뚝 레벨</h2><div id="primaryRuneStrip" class="result-runes"></div><h3>${p.combo}</h3>
-   <div class="cards"><div class="card"><span>추천 최대</span><b class="goodtxt">${p.level}레벨</b></div><div class="card"><span>생존률</span><b>${pct(p.result.survival)}</b></div><div class="card"><span>95% 신뢰구간</span><b>${pct(p.result.ciLow)} ~ ${pct(p.result.ciHigh)}</b></div></div><p>${(p.checks||[]).map(x=>x.level+"레벨 "+pct(x.result.survival)+" (하한 "+pct(x.result.ciLow)+")").join(" · ")}</p><div class="analysis-note"><b>결과 해석</b><span>${interpretation(p.result,target)}</span></div><div class="result-actions"><button class="btn good" id="verifyResult">현재 레벨 30,000회 재검증</button></div></div>`;
+   <div class="cards"><div class="card"><span>추천 최대</span><b class="goodtxt">${p.level}레벨</b></div><div class="card"><span>생존률</span><b>${pct(p.result.survival)}</b></div><div class="card"><span>95% 신뢰구간</span><b>${pct(p.result.ciLow)} ~ ${pct(p.result.ciHigh)}</b></div></div><p>${(p.checks||[]).map(x=>x.level+"레벨 "+pct(x.result.survival)+" (하한 "+pct(x.result.ciLow)+")").join(" · ")}</p><div class="analysis-note"><b>결과 해석</b><span>${interpretation(p.result,target)}</span></div><div class="result-actions"><button class="btn good" id="verifyResult">현재 레벨 30,000회 재검증</button></div>${debugPanel(p.result)}</div>`;
  }else{
    const r=p.recommended.result,b=p.barrier?.result;
    let html=`<div class="hero"><h2>최종 추천 룬 조합</h2><div id="primaryRuneStrip" class="result-runes"></div><h3>${p.recommended.combo}</h3>
    <div class="cards"><div class="card"><span>생존률</span><b class="goodtxt">${pct(r.survival)}</b></div><div class="card"><span>95% 신뢰구간</span><b class="goodtxt">${pct(r.ciLow)} ~ ${pct(r.ciHigh)}</b></div><div class="card"><span>${durationText} 총딜</span><b>${num(r.damage)}</b></div></div><p>최종 검증 ${num(r.sims)}회</p>
-   <div class="analysis-note"><b>결과 해석</b><span>${interpretation(r,target)}</span></div><div class="result-actions"><button class="btn warn" id="useRecommendedMax">이 룬 조합으로 최대 말뚝레벨 구하기</button><button class="btn good" id="verifyResult">추천 조합 30,000회 재검증</button></div>`;
+   <div class="analysis-note"><b>결과 해석</b><span>${interpretation(r,target)}</span></div><div class="result-actions"><button class="btn warn" id="useRecommendedMax">이 룬 조합으로 최대 말뚝레벨 구하기</button><button class="btn good" id="verifyResult">추천 조합 30,000회 재검증</button></div>${debugPanel(r)}`;
    if(p.barrier)html+=`<h2>방어벽 포함 최고 조합</h2><h3>${p.barrier.combo}</h3><p>생존 ${pct(b.survival)} · 하한 ${pct(b.ciLow)} · 총딜 ${num(b.damage)} · 추천 대비 ${num(b.damage-r.damage)}</p>`;
    html+=`<h2>상위 조합 비교</h2><div class="ranking-wrap"><table class="ranking-table"><thead><tr><th>순위</th><th>판정</th><th>생존률</th><th>95% 하한</th><th>총딜</th><th>조합</th><th></th></tr></thead><tbody>${p.ranking.slice(0,10).map((x,i)=>`<tr><td>${i+1}</td><td>${x.result.wilson*100>=target?'<span class="stable-pill">안정권</span>':'<span class="fail-pill">미달</span>'}</td><td>${pct(x.result.survival)}</td><td>${pct(x.result.ciLow)}</td><td>${num(x.result.damage)}</td><td class="combo-cell">${x.combo}</td><td><button class="btn mini apply-ranked" data-combo="${encodeURIComponent(x.combo)}">적용</button></td></tr>`).join("")}</tbody></table></div>`;
    html+=`</div>`;
@@ -385,7 +421,7 @@ function finalStats(s,data,combo){
  const hp=(flatHp+t.flatHp)*(1+t.hpPct+t.legendHp+(s.extraHp+s.extraBoth)/100);
  const atk=(flatAtk+t.flatAtk)*(1+t.atkPct+t.legendAtk+(s.extraAtk+s.extraBoth)/100);
  const bossAtk=atk*(1+t.bossPct)+s.titanBonus;
- return {flatHp,flatAtk,hp,atk,bossAtk,t,skills};
+ return {flatHp,flatAtk,hp,atk,bossAtk,t,skills,rawLevelCapFactor,levelCapFactor:f,cappedBaseHp:s.baseHp*f,cappedBaseAtk:s.baseAtk*f};
 }
 const titanDamage=l=>{
  const level=Math.max(1,Math.floor(Number(l)||1));
@@ -400,31 +436,62 @@ function percentile(sorted,q){if(!sorted.length)return 0;const i=(sorted.length-
 function simulateBatch(s,data,combo,sims){
  const duration=Math.max(1,Math.round(Number(s.durationMinutes||50)*60));
  const st=finalStats(s,data,combo),{hp,atk,bossAtk,t,skills}=st;
- const incoming=Math.max(0,titanDamage(s.titanLevel)-s.titanReduction-t.drFlat);
+ const rawTitanDamage=titanDamage(s.titanLevel);
+ const incoming=Math.max(0,rawTitanDamage-s.titanReduction-t.drFlat);
  const lsP=clamp(t.lsChance),lsAmt=atk*Math.max(0,t.lsPct),healP=clamp(t.healChance),healAmt=hp*Math.max(0,t.healPct),drP=clamp(t.drChance),drAmt=t.drProc;
+ const debug=!!s.debugMode;
+ const events={dinoAttackChecks:0,titanHitChecks:0,nonLethalTitanHits:0,lifestealChecks:0,lifestealProcs:0,healChecks:0,healProcs:0,damageResistanceChecks:0,damageResistanceProcs:0};
+ const totals={healRaw:0,healActual:0,lifestealRaw:0,lifestealActual:0,damageTaken:0,damagePrevented:0};
+ const skillDebug={};for(const skill of skills)skillDebug[skill.name]={checks:0,procs:0,bonusDamage:0};
  let survive=0,damageSum=0,timeSum=0;const deathTimes=[];
  for(let n=0;n<sims;n++){
   let cur=hp,damage=0,aliveTime=duration;
   for(let sec=1;sec<=duration;sec++){
-   damage+=bossAtk;
-   if(Math.random()<lsP)cur=Math.min(hp,cur+lsAmt);
-   for(const skill of skills)if(Math.random()<clamp(skill.skillChance))damage+=bossAtk*Math.max(0,skill.skillPct);
+   damage+=bossAtk;if(debug)events.dinoAttackChecks++;
+   if(debug)events.lifestealChecks++;
+   if(Math.random()<lsP){
+    const before=cur;cur=Math.min(hp,cur+lsAmt);
+    if(debug){events.lifestealProcs++;totals.lifestealRaw+=lsAmt;totals.lifestealActual+=cur-before}
+   }
+   for(const skill of skills){
+    if(debug)skillDebug[skill.name].checks++;
+    if(Math.random()<clamp(skill.skillChance)){
+     const bonus=bossAtk*Math.max(0,skill.skillPct);damage+=bonus;
+     if(debug){skillDebug[skill.name].procs++;skillDebug[skill.name].bonusDamage+=bonus}
+    }
+   }
    if(sec%3===0){
-    let hit=incoming;if(Math.random()<drP)hit=Math.max(0,hit-drAmt);cur-=hit;
+    if(debug){events.titanHitChecks++;events.damageResistanceChecks++}
+    let hit=incoming;
+    if(Math.random()<drP){const before=hit;hit=Math.max(0,hit-drAmt);if(debug){events.damageResistanceProcs++;totals.damagePrevented+=before-hit}}
+    cur-=hit;if(debug)totals.damageTaken+=hit;
     if(cur<=0){aliveTime=sec;break}
-    // 힐은 매초가 아니라 타이탄에게 실제로 피격된 순간에만 1회 판정합니다.
-    if(Math.random()<healP)cur=Math.min(hp,cur+healAmt);
+    if(debug){events.nonLethalTitanHits++;events.healChecks++}
+    // 힐은 타이탄에게 실제로 피격되고 살아남은 순간에만 1회 판정합니다.
+    if(Math.random()<healP){
+     const before=cur;cur=Math.min(hp,cur+healAmt);
+     if(debug){events.healProcs++;totals.healRaw+=healAmt;totals.healActual+=cur-before}
+    }
    }
   }
   if(cur>0)survive++;else deathTimes.push(aliveTime);
   damageSum+=damage;timeSum+=aliveTime;
  }
  deathTimes.sort((a,b)=>a-b);const ci=wilsonInterval(survive,sims);
- return {survive,sims,survival:survive/sims,wilson:ci.low,ciLow:ci.low,ciHigh:ci.high,damage:damageSum/sims,time:timeSum/sims,p10:percentile(deathTimes,.1)||duration,p50:percentile(deathTimes,.5)||duration,p90:percentile(deathTimes,.9)||duration,hp,atk,bossAtk};
+ const result={survive,sims,survival:survive/sims,wilson:ci.low,ciLow:ci.low,ciHigh:ci.high,damage:damageSum/sims,time:timeSum/sims,p10:percentile(deathTimes,.1)||duration,p50:percentile(deathTimes,.5)||duration,p90:percentile(deathTimes,.9)||duration,hp,atk,bossAtk};
+ if(debug)result.debug={duration,stats:{rawLevelCapFactor:st.rawLevelCapFactor,levelCapFactor:st.levelCapFactor,cappedBaseHp:st.cappedBaseHp,cappedBaseAtk:st.cappedBaseAtk,flatHp:st.flatHp,flatAtk:st.flatAtk},titan:{level:s.titanLevel,rawDamage:rawTitanDamage,incomingDamage:incoming,attackPeriod:3},heal:{chance:healP,pct:t.healPct,amount:healAmt},lifesteal:{chance:lsP,pct:t.lsPct,amount:lsAmt},events,totals,skills:skillDebug};
+ return result;
 }
 function mergeResults(parts){
  const sims=parts.reduce((a,x)=>a+x.sims,0),survive=parts.reduce((a,x)=>a+x.survive,0),ci=wilsonInterval(survive,sims),last=parts[parts.length-1];
- return {...last,sims,survive,survival:survive/sims,wilson:ci.low,ciLow:ci.low,ciHigh:ci.high,damage:parts.reduce((a,x)=>a+x.damage*x.sims,0)/sims,time:parts.reduce((a,x)=>a+x.time*x.sims,0)/sims};
+ const merged={...last,sims,survive,survival:survive/sims,wilson:ci.low,ciLow:ci.low,ciHigh:ci.high,damage:parts.reduce((a,x)=>a+x.damage*x.sims,0)/sims,time:parts.reduce((a,x)=>a+x.time*x.sims,0)/sims};
+ if(parts.some(x=>x.debug)){
+  const first=parts.find(x=>x.debug)?.debug;
+  const events={},totals={},skills={};
+  for(const x of parts){if(!x.debug)continue;for(const [k,v] of Object.entries(x.debug.events||{}))events[k]=(events[k]||0)+v;for(const [k,v] of Object.entries(x.debug.totals||{}))totals[k]=(totals[k]||0)+v;for(const [name,obj] of Object.entries(x.debug.skills||{})){skills[name]??={checks:0,procs:0,bonusDamage:0};for(const [k,v] of Object.entries(obj))skills[name][k]=(skills[name][k]||0)+v}}
+  merged.debug={...first,events,totals,skills};
+ }
+ return merged;
 }
 function adaptiveSimulate(s,data,combo,baseN,progressLabel="정밀 검증"){
  const target=s.target/100,parts=[];let total=0;
