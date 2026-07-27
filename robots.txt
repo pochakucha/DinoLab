@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://pochakucha.github.io/DinoLab/sitemap.xml
