@@ -25,7 +25,7 @@ let lastRenderedResult=null;
 let deferredInstallPrompt=null;
 let runStartedAt=0;
 let statusTimer=null;
-const APP_VERSION="0.29.1";
+const APP_VERSION="0.29.5";
 
 function displayGrade(raw){return ({"에픽/노랑":"에픽","초록":"레어","파랑":"일반"}[raw]||raw)}
 function availableMaxLevel(d){
@@ -377,7 +377,10 @@ function combine(data,combo){
  return {t,skills};
 }
 function finalStats(s,data,combo){
- const den=s.baseHp/10+s.baseAtk,f=(s.levelCap-s.moveSpeed-s.constMove)/den;
+ const den=s.baseHp/10+s.baseAtk;
+ // 레벨캡은 초과분을 낮추기 위한 상한입니다. 레벨캡 이하 스펙을 상향 보정하지 않습니다.
+ const rawLevelCapFactor=(s.levelCap-s.moveSpeed-s.constMove)/den;
+ const f=Math.min(1,Math.max(0,rawLevelCapFactor));
  const flatHp=s.baseHp*f+s.constHp,flatAtk=s.baseAtk*f+s.constAtk,{t,skills}=combine(data,combo);
  const hp=(flatHp+t.flatHp)*(1+t.hpPct+t.legendHp+(s.extraHp+s.extraBoth)/100);
  const atk=(flatAtk+t.flatAtk)*(1+t.atkPct+t.legendAtk+(s.extraAtk+s.extraBoth)/100);
@@ -405,9 +408,13 @@ function simulateBatch(s,data,combo,sims){
   for(let sec=1;sec<=duration;sec++){
    damage+=bossAtk;
    if(Math.random()<lsP)cur=Math.min(hp,cur+lsAmt);
-   if(Math.random()<healP)cur=Math.min(hp,cur+healAmt);
    for(const skill of skills)if(Math.random()<clamp(skill.skillChance))damage+=bossAtk*Math.max(0,skill.skillPct);
-   if(sec%3===0){let hit=incoming;if(Math.random()<drP)hit=Math.max(0,hit-drAmt);cur-=hit;if(cur<=0){aliveTime=sec;break}}
+   if(sec%3===0){
+    let hit=incoming;if(Math.random()<drP)hit=Math.max(0,hit-drAmt);cur-=hit;
+    if(cur<=0){aliveTime=sec;break}
+    // 힐은 매초가 아니라 타이탄에게 실제로 피격된 순간에만 1회 판정합니다.
+    if(Math.random()<healP)cur=Math.min(hp,cur+healAmt);
+   }
   }
   if(cur>0)survive++;else deathTimes.push(aliveTime);
   damageSum+=damage;timeSum+=aliveTime;
@@ -437,7 +444,8 @@ const comboText=c=>c.map(x=>x.name+x.level).join(" / ");
 function analytic(s,data,c){
  const st=finalStats(s,data,c),t=st.t;
  const incoming=Math.max(0,titanDamage(s.titanLevel)-s.titanReduction-t.drFlat),dr=t.drChance*Math.min(incoming,t.drProc);
- const heal=3*clamp(t.lsChance)*st.atk*Math.max(0,t.lsPct)+3*clamp(t.healChance)*st.hp*Math.max(0,t.healPct);
+ // 3초 동안 흡혈은 3회(매초 공격), 힐은 타이탄 피격 시 1회만 기대값에 반영합니다.
+ const heal=3*clamp(t.lsChance)*st.atk*Math.max(0,t.lsPct)+clamp(t.healChance)*st.hp*Math.max(0,t.healPct);
  let skill=0;for(const e of st.skills)skill+=clamp(e.skillChance)*Math.max(0,e.skillPct);
  const duration=Math.max(1,Math.round(Number(s.durationMinutes||50)*60));
  return {survivalScore:heal-(incoming-dr)+st.hp/1000,damage:duration*st.bossAtk*(1+skill)};
