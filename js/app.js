@@ -610,3 +610,15 @@ if("serviceWorker" in navigator){
   }catch(e){console.warn("서비스 워커 등록 실패",e)}
  });
 }
+
+
+// v0.29.4 Debug scaffold
+window.DinoLabDebug={
+ enabled:false,
+ logs:[],
+ log:function(msg){
+   if(!this.enabled)return;
+   this.logs.push(`[${new Date().toLocaleTimeString()}] ${msg}`);
+   console.log('[DinoLab]',msg);
+ }
+};
