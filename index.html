@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html lang="ko"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><meta content="#07101e" name="theme-color"/><meta content="yes" name="apple-mobile-web-app-capable"/><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/><meta content="DinoLab" name="apple-mobile-web-app-title"/><link href="icons/icon-192.png" rel="apple-touch-icon"/><title>DinoLab 디노랩 | 다이노뮤턴트: T-Rex 타이탄 룬 조합 계산기</title><link href="data:image/svg+xml,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22&gt;&lt;text y=%22.9em%22 font-size=%2290%22&gt;🦖&lt;/text&gt;&lt;/svg&gt;" rel="icon"/><link href="manifest.webmanifest" rel="manifest"/><link href="css/main.css?v=0.30.1" rel="stylesheet"/><meta content="다이노뮤턴트: T-Rex 타이탄 전투의 50분 생존률, 최고 피해량, 최적 룬 조합을 계산하는 DinoLab 디노랩 시뮬레이터입니다." name="description"/><meta content="index, follow" name="robots"/><meta content="DinoLab 디노랩 | 다이노뮤턴트: T-Rex 타이탄 룬 조합 계산기" property="og:title"/><meta content="다이노뮤턴트: T-Rex 타이탄 전투의 50분 생존률, 최고 피해량, 최적 룬 조합을 계산하는 DinoLab 디노랩 시뮬레이터입니다." property="og:description"/><meta content="website" property="og:type"/><meta content="https://pochakucha.github.io/DinoLab/" property="og:url"/><link href="https://pochakucha.github.io/DinoLab/" rel="canonical"/></head><body><header class="site-header"><div class="header-inner"><div class="brand"><div aria-hidden="true" class="brand-mark">D</div><div><span>DinoLab</span><small>TITAN RESEARCH TOOLS</small></div></div><nav class="nav"><button data-scroll="#calculator">타이탄 계산기</button><button data-scroll="#runeRows">보유 룬</button><button data-scroll="#encyclopedia">룬 도감</button><a href="https://pochakucha.tistory.com" rel="noopener" target="_blank">공략 블로그</a></nav></div></header>
+<html lang="ko"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><meta content="#07101e" name="theme-color"/><meta content="yes" name="apple-mobile-web-app-capable"/><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/><meta content="DinoLab" name="apple-mobile-web-app-title"/><link href="icons/icon-192.png" rel="apple-touch-icon"/><title>DinoLab 디노랩 | 다이노뮤턴트: T-Rex 타이탄 룬 조합 계산기</title><link href="data:image/svg+xml,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22&gt;&lt;text y=%22.9em%22 font-size=%2290%22&gt;🦖&lt;/text&gt;&lt;/svg&gt;" rel="icon"/><link href="manifest.webmanifest" rel="manifest"/><link href="css/main.css?v=0.30.2" rel="stylesheet"/><meta content="다이노뮤턴트: T-Rex 타이탄 전투의 50분 생존률, 최고 피해량, 최적 룬 조합을 계산하는 DinoLab 디노랩 시뮬레이터입니다." name="description"/><meta content="index, follow" name="robots"/><meta content="DinoLab 디노랩 | 다이노뮤턴트: T-Rex 타이탄 룬 조합 계산기" property="og:title"/><meta content="다이노뮤턴트: T-Rex 타이탄 전투의 50분 생존률, 최고 피해량, 최적 룬 조합을 계산하는 DinoLab 디노랩 시뮬레이터입니다." property="og:description"/><meta content="website" property="og:type"/><meta content="https://pochakucha.github.io/DinoLab/" property="og:url"/><link href="https://pochakucha.github.io/DinoLab/" rel="canonical"/></head><body><header class="site-header"><div class="header-inner"><div class="brand"><div aria-hidden="true" class="brand-mark">D</div><div><span>DinoLab</span><small>TITAN RESEARCH TOOLS</small></div></div><nav class="nav"><button data-scroll="#calculator">타이탄 계산기</button><button data-scroll="#runeRows">보유 룬</button><button data-scroll="#encyclopedia">룬 도감</button><a href="https://pochakucha.tistory.com" rel="noopener" target="_blank">공략 블로그</a></nav></div></header>
 <section class="hero-banner"><div class="hero-box"><div><h1>내 스펙으로 가장 강한<br/>타이탄 조합을 찾습니다</h1><p>보유 룬과 스펙을 입력하면 설정한 목표 시간의 생존률과 총딜을 시뮬레이션합니다.</p><p class="hero-branding">🦖 DinoLab<br/>이헤와 함께하는 White 부족의<br/><strong>공식 Titan Research Lab</strong></p><div class="feature-chips"><span>5룬 정밀 계산</span><span>최고딜 자동 추천</span><span>최대 말뚝 레벨</span><span>모바일 지원</span></div></div><div class="hero-action hero-calc-actions">
 <button class="btn good" id="optimize">🚀 50분 생존률 90% 이상 최고딜 조합 찾기</button>
 <button class="btn primary" id="calcSelected">🧮 직접 선택한 5룬 계산</button>
@@ -8,7 +8,7 @@
 <button class="btn developer-quick-btn" id="developerQuickToggle" type="button">🛠 개발자 모드 켜기</button>
 </div></div></section>
 <div class="app" id="calculator">
-<div class="title"><h1>타이탄 룬 최적화 계산기 <span class="beta-badge">OPEN BETA · v0.30.1</span></h1><small>타이탄 전용 시뮬레이터 · 입력값은 현재 기기에 임시 저장됩니다</small></div>
+<div class="title"><h1>타이탄 룬 최적화 계산기 <span class="beta-badge">OPEN BETA · v0.30.2</span></h1><small>타이탄 전용 시뮬레이터 · 입력값은 현재 기기에 임시 저장됩니다</small></div>
 <div class="grid">
 <section class="panel">
 <h2>스펙 및 분석 조건</h2>
@@ -16,7 +16,7 @@
 <div class="form-grid" id="statsForm"></div>
 <h2 style="margin-top:16px">내 프로필</h2>
 <div class="profile-manager">
-<label class="profile-name-field"><span>프로필 이름</span><input aria-label="현재 프로필 이름" id="profileNameDisplay" readonly="" type="text" value="프로필"/></label>
+<label class="profile-name-field"><span>프로필 이름</span><input aria-label="현재 프로필 이름" id="profileNameDisplay" autocomplete="off" inputmode="text" placeholder="프로필 이름 입력" type="text" value=""/></label>
 <div class="profile-save-row">
 <button class="btn" id="saveProfile">임시 저장</button>
 <button class="btn danger" id="deleteProfile">삭제</button>
@@ -65,5 +65,5 @@
 <article><b>📖 룬 도감</b><span>등급·이름·레벨 데이터 확인</span></article>
 </div>
 </section>
-<footer class="footer"><strong>DinoLab Open Beta · v0.30.1</strong><span>타이탄 전용 룬 시뮬레이터</span><span>계산기는 GitHub Pages에서 실행되고 공략은 <a href="https://pochakucha.tistory.com" rel="noopener" target="_blank">포차쿠차 티스토리</a>에서 제공합니다.</span><span>💬 버그 제보 및 건의사항 환영합니다.</span><span><a href="https://open.kakao.com/o/sRWhg1Fi" rel="noopener noreferrer" target="_blank">다이노뮤턴트 DinoLab 공식 오픈채팅</a></span></footer><div class="pwa-toast" hidden="" id="pwaToast"><span id="pwaToastText"></span><button class="btn primary" id="pwaToastAction">확인</button></div>
-<script src="data/runes.js?v=0.30.1"></script><script src="js/app.js?v=0.30.1"></script></body></html>
+<footer class="footer"><strong>DinoLab Open Beta · v0.30.2</strong><span>타이탄 전용 룬 시뮬레이터</span><span>계산기는 GitHub Pages에서 실행되고 공략은 <a href="https://pochakucha.tistory.com" rel="noopener" target="_blank">포차쿠차 티스토리</a>에서 제공합니다.</span><span>💬 버그 제보 및 건의사항 환영합니다.</span><span><a href="https://open.kakao.com/o/sRWhg1Fi" rel="noopener noreferrer" target="_blank">다이노뮤턴트 DinoLab 공식 오픈채팅</a></span></footer><div class="pwa-toast" hidden="" id="pwaToast"><span id="pwaToastText"></span><button class="btn primary" id="pwaToastAction">확인</button></div>
+<script src="data/runes.js?v=0.30.2"></script><script src="js/app.js?v=0.30.2"></script></body></html>
