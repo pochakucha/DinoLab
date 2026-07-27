@@ -1,10 +1,10 @@
-const CACHE = "dinolab-v0.30.0";
+const CACHE = "dinolab-v0.30.1";
 const CORE = [
   "./",
   "./index.html",
-  "./css/main.css?v=0.29.5",
-  "./data/runes.js?v=0.29.5",
-  "./js/app.js?v=0.29.5",
+  "./css/main.css?v=0.30.1",
+  "./data/runes.js?v=0.30.1",
+  "./js/app.js?v=0.30.1",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png"

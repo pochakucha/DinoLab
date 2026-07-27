@@ -628,7 +628,37 @@ function placeCalcActionsForViewport(){
 window.addEventListener("resize",placeCalcActionsForViewport);
 
 window.addEventListener("hashchange",()=>{if(location.hash==="#calculator")scrollToCalculatorTarget("#calculator",false)});
+
+function syncDeveloperModeUi(){
+ const checkbox=document.getElementById("developerMode");
+ const quick=document.getElementById("developerQuickToggle");
+ if(!checkbox||!quick)return;
+ const on=checkbox.checked;
+ quick.classList.toggle("active",on);
+ quick.textContent=on?"✅ 개발자 모드 켜짐":"🛠 개발자 모드 켜기";
+ quick.setAttribute("aria-pressed",String(on));
+}
+function initDeveloperModeControls(){
+ const checkbox=document.getElementById("developerMode");
+ const quick=document.getElementById("developerQuickToggle");
+ if(!checkbox)return;
+ try{checkbox.checked=localStorage.getItem("dinolab:developerMode")==="1";}catch(e){}
+ checkbox.addEventListener("change",()=>{
+  try{localStorage.setItem("dinolab:developerMode",checkbox.checked?"1":"0");}catch(e){}
+  syncDeveloperModeUi();
+ });
+ if(quick)quick.addEventListener("click",()=>{
+  checkbox.checked=!checkbox.checked;
+  checkbox.dispatchEvent(new Event("change",{bubbles:true}));
+  document.getElementById("calculator")?.scrollIntoView({behavior:"smooth",block:"start"});
+  setTimeout(()=>document.querySelector(".developer-toggle-prominent")?.classList.add("pulse-highlight"),350);
+  setTimeout(()=>document.querySelector(".developer-toggle-prominent")?.classList.remove("pulse-highlight"),1500);
+ });
+ syncDeveloperModeUi();
+}
+
 init();
+initDeveloperModeControls();
 placeCalcActionsForViewport();
 
 // DinoLab v0.1 rune encyclopedia

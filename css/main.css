@@ -570,3 +570,13 @@ button,input,select{touch-action:manipulation}
 .debug-warning{margin:10px 12px 0;padding:9px 10px;border:1px solid #f59e0b;border-radius:8px;background:#78350f55;color:#fde68a;font-size:12px;line-height:1.5}
 .debug-foot{margin:0!important;padding:10px 12px!important;border-top:1px solid #243247;color:#64748b!important;font-size:11px!important;line-height:1.5}
 @media(max-width:520px){.debug-panel th,.debug-panel td{padding:7px 9px}.debug-panel th{width:56%}}
+
+/* DinoLab v0.30.1 — developer mode visibility */
+.developer-toggle-prominent{margin:10px 0 16px;border:2px solid #f59e0b;background:linear-gradient(135deg,#3b2507,#111827);box-shadow:0 0 0 3px #f59e0b22}
+.developer-toggle-prominent b{font-size:16px;color:#fde68a}
+.developer-toggle-prominent input{accent-color:#f59e0b}
+.developer-quick-btn{border-color:#f59e0b!important;background:#3b2507!important;color:#fde68a!important}
+.developer-quick-btn.active{background:#14532d!important;border-color:#22c55e!important;color:#dcfce7!important}
+@media(max-width:760px){.developer-toggle-prominent{margin-top:8px}.developer-quick-btn{order:4}}
+@keyframes developerPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.015);box-shadow:0 0 0 6px #f59e0b33}}
+.developer-toggle-prominent.pulse-highlight{animation:developerPulse .55s ease 2}
